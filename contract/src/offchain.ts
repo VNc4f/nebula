@@ -429,6 +429,12 @@ export class Contract {
     }).sort(sortDesc);
   }
 
+  async utxoByUnit(policyId: PolicyId, assetName: AssetName): Promise<UTxO> {
+    return await this.lucid.utxoByUnit(toUnit(
+      policyId,
+      assetName,
+    ))
+  }
   async getUtxosByHash(txHash: TxHash, ignoreLovelace: boolean): Promise<UTxO[]> {
     const utxos = await this.lucid.utxosByHash(txHash);
 

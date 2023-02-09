@@ -15,7 +15,7 @@ export {
   toText,
   toUnit,
   Tx,
-} from "./lucid-cardano/mod.ts";
+} from "https://deno.land/x/lucid@0.9.1/mod.ts";
 export type {
   Address,
   Assets,
@@ -33,7 +33,7 @@ export type {
   TxHash,
   Unit,
   UTxO,
-} from "./lucid-cardano/mod.ts";
+} from "https://deno.land/x/lucid@0.9.1/mod.ts";
 
 export {
   createClient,
