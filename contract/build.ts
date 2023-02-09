@@ -25,13 +25,13 @@ await build({
     main: "./esm/mod.js",
     type: "module",
   },
-  mappings: {
-    "https://deno.land/x/lucid@0.9.1/mod.ts": {
-      name: "lucid-cardano",
-      version: "^0.9.1",
-      peerDependency: true,
-    },
-  },
+  // mappings: {
+  //   "https://deno.land/x/lucid@0.9.1/mod.ts": {
+  //     name: "lucid-cardano",
+  //     version: "^0.9.1",
+  //     peerDependency: true,
+  //   },
+  // },
 });
 
 Deno.copyFileSync(currentPath("../LICENSE"), currentPath("dist/LICENSE"));
@@ -43,8 +43,8 @@ await esbuild.build({
   entryPoints: ["./dist/esm/contract/mod.js"],
   outfile: "./dist/web/mod.js",
   minify: true,
-  external: [
-    "lucid-cardano",
-  ],
+  // external: [
+  //   "lucid-cardano",
+  // ],
 });
 esbuild.stop();

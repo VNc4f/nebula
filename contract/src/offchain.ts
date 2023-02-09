@@ -429,6 +429,16 @@ export class Contract {
     }).sort(sortDesc);
   }
 
+  async getUtxosByHash(txHash: TxHash, ignoreLovelace: boolean): Promise<UTxO[]> {
+    const utxos = await this.lucid.utxosByHash(txHash);
+
+    return (ignoreLovelace ? utxos.filter((utxo: UTxO) => {
+      return Object.keys(utxo.assets).filter((unit) =>
+        unit !== "lovelace"
+      );
+    }): utxos).sort(sortDesc)
+  }
+
   /**
    * Create a royalty token and lock it in a script controlled by the specified owner.
    * The output the royalty token is in holds the royalty info (fees, recipients) in the datum.\
