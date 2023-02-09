@@ -1,4 +1,5 @@
 import { build, emptyDir } from "https://deno.land/x/dnt@0.30.0/mod.ts";
+import * as esbuild from "https://deno.land/x/esbuild@v0.14.45/mod.js";
 import packageInfo from "../package.json" assert { type: "json" };
 
 function currentPath(path: string): string {
@@ -35,3 +36,15 @@ await build({
 
 Deno.copyFileSync(currentPath("../LICENSE"), currentPath("dist/LICENSE"));
 Deno.copyFileSync(currentPath("README.md"), currentPath("dist/README.md"));
+
+await esbuild.build({
+  bundle: true,
+  format: "esm",
+  entryPoints: ["./dist/esm/contract/mod.js"],
+  outfile: "./dist/web/mod.js",
+  minify: true,
+  external: [
+    "lucid-cardano",
+  ],
+});
+esbuild.stop();

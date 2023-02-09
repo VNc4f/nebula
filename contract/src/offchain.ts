@@ -66,10 +66,7 @@ export class Contract {
       this.fundProtocol = false;
     } else {
       this.fundProtocol = this.lucid.network === "Mainnet"
-        ? this.config.fundProtocol ||
-            typeof this.config.fundProtocol === "undefined"
-          ? true
-          : false
+        ? this.config.fundProtocol || typeof this.config.fundProtocol === "undefined"
         : false;
     }
 
@@ -366,7 +363,7 @@ export class Contract {
     const utxos = await this.lucid.utxosAt(
       paymentCredentialOf(this.tradeAddress),
     );
-    return utxos.filter((utxo) =>
+    return utxos.filter((utxo: UTxO) =>
       Object.keys(utxo.assets)
         .filter((unit) => unit !== "lovelace")
         .every(
@@ -391,7 +388,7 @@ export class Contract {
         this.config.policyId,
         assetName,
       ),
-    )).filter((utxo) => {
+    )).filter((utxo: UTxO) => {
       const units = Object.keys(utxo.assets).filter((unit) =>
         unit !== "lovelace"
       );
@@ -420,7 +417,7 @@ export class Contract {
         this.mintPolicyId,
         bidAssetName,
       ),
-    )).filter((utxo) => {
+    )).filter((utxo: UTxO) => {
       const units = Object.keys(utxo.assets).filter((unit) =>
         unit !== "lovelace"
       );
@@ -608,7 +605,7 @@ export class Contract {
     const ownerAddress = this.lucid.utils.validatorToAddress(ownersScript);
 
     const utxos = await this.lucid.utxosAt(paymentCredentialOf(ownerAddress));
-    const royaltyUtxo = utxos.find((utxo) =>
+    const royaltyUtxo = utxos.find((utxo: UTxO) =>
       utxo.assets[this.config.royaltyToken]
     );
 
