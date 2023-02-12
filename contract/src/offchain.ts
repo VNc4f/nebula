@@ -4,6 +4,7 @@ import {
   Assets,
   Data,
   Datum,
+  DatumHash,
   fromText,
   fromUnit,
   Lovelace,
@@ -12,6 +13,7 @@ import {
   OutRef,
   paymentCredentialOf,
   PolicyId,
+  Redeemer,
   ScriptHash,
   SpendingValidator,
   toUnit,
@@ -19,26 +21,16 @@ import {
   TxHash,
   Unit,
   UTxO,
-  DatumHash,
+  Json,
+  C,
+  Core, fromHex,
 } from "../../deps.ts";
 import scripts from "./nebula/plutus.json" assert {type: "json"};
-import {
-  fromAddress,
-  fromAssets,
-  sortAsc,
-  sortDesc,
-  toAddress,
-  toAssets,
-} from "../../common/utils.ts";
+import {fromAddress, fromAssets, sortAsc, sortDesc, toAddress, toAssets,} from "../../common/utils.ts";
 import * as D from "../../common/contract.types.ts";
-import {
-  AssetName,
-  Constraints,
-  ContractConfig,
-  NameAndQuantity,
-  RoyaltyRecipient,
-} from "./types.ts";
+import {AssetName, Constraints, ContractConfig, NameAndQuantity, RoyaltyRecipient,} from "./types.ts";
 import {budConfig} from "./config.ts";
+import {PBondUnknownDatum, PBondWriterDatum, PClosedPoolDatum, POpenPoolDatum} from "../../common/contract.types.ts";
 
 export class Contract {
   lucid: Lucid;
@@ -431,10 +423,15 @@ export class Contract {
   }
 
   async utxoByUnit(policyId: PolicyId, assetName: AssetName): Promise<UTxO> {
-    return await this.lucid.utxoByUnit(toUnit(
-      policyId,
-      assetName,
-    ))
+    return await this.lucid.utxoByUnit(toUnit(policyId, assetName))
+  }
+
+  async utxosByUnit(policyId: PolicyId, assetName: AssetName): Promise<UTxO[]> {
+    return await this.lucid.utxosByUnit(toUnit(policyId, assetName))
+  }
+
+  async utxosMintByUnit(policyId: PolicyId, assetName: AssetName): Promise<UTxO[]> {
+    return await this.lucid.utxosMintByUnit(toUnit(policyId, assetName))
   }
 
   async getUtxosByHash(txHash: TxHash, ignoreLovelace: boolean): Promise<UTxO[]> {
@@ -447,8 +444,82 @@ export class Contract {
     }) : utxos).sort(sortDesc)
   }
 
-  async getDatumJson(datumHash: DatumHash): Promise<unknown> {
-    return await this.lucid.getDatumJson(datumHash);
+  getDatumJson(datumHash: DatumHash): unknown {
+    return this.lucid.getDatumJson(datumHash);
+  }
+
+  async optimOpenDatumOf(utxo: UTxO): Promise<D.POpenDatum> {
+    return await this.lucid.datumOf<D.POpenDatum>(utxo, D.POpenDatum)
+  }
+
+  async optimOpenPoolDatumOf(utxo: UTxO): Promise<D.POpenPoolDatum> {
+    return await this.lucid.datumOf<D.POpenPoolDatum>(utxo, D.POpenPoolDatum)
+  }
+
+  async optimClosedPoolDatumOf(utxo: UTxO): Promise<D.PClosedPoolDatum> {
+    return await this.lucid.datumOf<D.PClosedPoolDatum>(utxo, D.PClosedPoolDatum)
+  }
+
+  async optimBondWriterDatumOf(utxo: UTxO): Promise<D.PBondWriterDatum> {
+    return await this.lucid.datumOf<D.PBondWriterDatum>(utxo, D.PBondWriterDatum)
+  }
+
+  async optimBondUnknownDatumOf(utxo: UTxO): Promise<Json> {
+    return Data.toJson(Data.deserialize(C.PlutusData.from_bytes(fromHex(
+      await this.lucid.datumOf<>(utxo)
+    ))))
+  }
+
+  listingDataObj(): Data.Object {
+    return Data.Object({
+      owner: Data.String,
+      amount: Data.BigInt,
+      private: Data.Boolean,
+      tuple: Data.Tuple([D.Value]),
+      tuple_constr: Data.Tuple([D.Value], true),
+      enum: Data.Enum([
+        Data.Literal("Sell"),
+        Data.Literal("Buy"),
+        Data.Literal("Cancel"),
+      ]),
+      nullable: Data.Nullable(Data.BigInt),
+      obj: Data.Object({
+        policyId: Data.String,
+        assetName: Data.String,
+      }),
+      arr: Data.Nullable(Data.Array(Data.String)),
+      map: D.Value,
+    });
+  }
+
+  sampleToCbor(): Datum | Redeemer {
+    const Listing = this.listingDataObj();
+    type Listing = Data.Static<typeof Listing>;
+
+    return Data.to<Listing>({
+        owner: "31313131313131",
+        amount: 5252352323n,
+        private: false,
+        tuple: [new Map().set("5f1dd3192cbdaa2c1a91560a6147466efb18d33a5d6516b266ce6b6f", new Map().set("82f2356d37f02d3f4c1d3ad2af585ea1b3e485830a2fd3af0f4b07113cf23496", 100n))],
+        tuple_constr: [new Map().set("4702f1ff21a54f728a59b3f5f0f351891c99015a2158b816c721ea72", new Map().set("82f2356d37f02d3f4c1d3ad2af585ea1b3e485830a2fd3af0f4b07113cf23496", 1000n))],
+        enum: "Sell",
+        obj: {
+          policyId: "5fb0abdfd1b8d096da6ffd7d3f5a8212a318447528f91a925e7fcd0f",
+          assetName: "82f2356d37f02d3f4c1d3ad2af585ea1b3e485830a2fd3af0f4b07113cf23496"
+        },
+        // nullable: null,
+        arr: ["5fb0abdfd1b8d096da6ffd7d3f5a8212a318447528f91a925e7fcd0f", "5f1dd3192cbdaa2c1a91560a6147466efb18d33a5d6516b266ce6b6f"],
+        map: new Map().set("68fa031807f52dfea48be90d3ba788935386126b63463c84c31baac0", new Map().set("82f2356d37f02d3f4c1d3ad2af585ea1b3e485830a2fd3af0f4b07113cf23496", 10000n)),
+      },
+      Listing,
+    )
+  }
+
+  sampleFromCbor(raw: Datum | Redeemer): unknown {
+    const Listing = this.listingDataObj();
+    type Listing = Data.Static<typeof Listing>;
+
+    return Data.from<Listing>(raw, Listing)
   }
 
   /**

@@ -65,6 +65,7 @@ const text = await Deno.readTextFile("./dist/web/mod.js");
 await Deno.writeTextFile(
   "./dist/web/mod.js",
   text.replaceAll('from"lucid-cardano";', 'from"./lucid-cardano/mod.js";')
+    .replaceAll('from "lucid-cardano";', 'from "./lucid-cardano/mod.js";')
 );
 
 Deno.removeSync("../../nebula-deploy/mod.js");
@@ -72,3 +73,17 @@ Deno.copyFileSync(
   "./dist/web/mod.js",
   "../../nebula-deploy/mod.js",
 );
+
+// await esbuild.build({
+//   bundle: true,
+//   format: "esm",
+//   entryPoints: ["../index.js"],
+//   outfile: "./dist/web/index.js",
+//   // minify: true,
+//   external: [
+//     "lucid-cardano",
+//     "./mod.js",
+//     "./support_wallets.js"
+//   ],
+// });
+// esbuild.stop();
