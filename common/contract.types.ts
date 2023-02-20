@@ -106,6 +106,34 @@ export const TradeParams = Data.Tuple([
 ]);
 export type TradeParams = Data.Static<typeof TradeParams>;
 
+export const Balance = Data.Object({
+  lovelace: Data.BigInt,
+  assets: Data.Nullable(Value),
+}, false);
+export type Balance = Data.Static<typeof Balance>;
+
+
+export const ListingSample = Data.Object({
+  owner: Data.String,
+  amount: Data.BigInt,
+  private: Data.Boolean,
+  tuple: Data.Tuple([Value]),
+  tuple_constr: Data.Tuple([Value], true),
+  enum: Data.Enum([
+    Data.Literal("Sell"),
+    Data.Literal("Buy"),
+    Data.Literal("Cancel"),
+  ]),
+  nullable: Data.Nullable(Data.BigInt),
+  obj: Data.Object({
+    policyId: Data.String,
+    assetName: Data.String,
+  }),
+  arr: Data.Nullable(Data.Array(Data.String)),
+  map: Value,
+});
+export type ListingSample = Data.Static<typeof ListingSample>;
+
 // Optim Bond
 /*
 data POpenDatum (s :: S)
@@ -135,8 +163,8 @@ export const POpenDatum = Data.Object({
   bondAmount: Data.BigInt,
   buffer: Data.BigInt,
   otmFee: Data.BigInt,
-  ogLender: Address,
-  start: Data.Nullable(Data.BigInt),
+  ogLender: Data.String,
+  start: Data.BigInt,
 });
 export type POpenDatum = Data.Static<typeof POpenDatum>;
 
@@ -162,7 +190,10 @@ export const POpenPoolDatum = Data.Object({
   minPrepaid: Data.BigInt,
   minBuffer: Data.BigInt,
   bondSymbol: Data.String,
-  specificBond: Data.Nullable(Data.Object(Data.Array(Data.String))),
+  specificBond: Data.Nullable(Data.Object({
+    currencySymbol: Data.String,
+    tokenName: Data.String,
+  })),
   poolToken: Data.String,
 });
 export type POpenPoolDatum = Data.Static<typeof POpenPoolDatum>;
