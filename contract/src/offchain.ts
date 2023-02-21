@@ -9,7 +9,6 @@ import {
   fromHex,
   fromText,
   fromUnit,
-  Json,
   Lovelace,
   Lucid,
   MintingPolicy,
@@ -30,7 +29,6 @@ import {fromAddress, fromAssets, sortAsc, sortDesc, toAddress, toAssets,} from "
 import * as D from "../../common/contract.types.ts";
 import {AssetName, Constraints, ContractConfig, NameAndQuantity, RoyaltyRecipient,} from "./types.ts";
 import {budConfig} from "./config.ts";
-import {ListingSample} from "../../common/contract.types.ts";
 
 export class Contract {
   lucid: Lucid;
