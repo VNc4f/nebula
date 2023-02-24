@@ -136,26 +136,23 @@ export type ListingSample = Data.Static<typeof ListingSample>;
 
 // Optim Bond
 /*
-data POpenDatum (s :: S)
-  = POpenDatum (Term s (PDataRecord
-'[ "epoRewards"      ':= PValue 'Sorted 'NoGuarantees  -- ^ monthly lovelace value gain promised
-  , "duration"        ':= PEpochTime                    -- ^ duration of the loan in epochs
-  , "bondSymbol"      ':= PCurrencySymbol
-  , "tokenName"       ':= PTokenName                    -- ^ token name of both Uniqueness and Ownership NFTs
-  , "bondAmount"      ':= PInteger
-  , "buffer"          ':= PEpochTime                    -- ^ number of epochs paid in advance
-  , "otmFee"          ':= PBasisPoints                  -- ^ Optim fee
-  , "ogLender"        ':= PPubKeyHash                   -- ^ used in staking the funds back to them
-  , "start"           ':= PEpochTime
-]))
-deriving stock (Generic)
-deriving anyclass (PlutusType, PIsData, PDataFields, PTryFrom PData)
-instance DerivePlutusType POpenDatum where type DPTStrat _ = PlutusTypeData
-*/
-// asset_name: "82f2356d37f02d3f4c1d3ad2af585ea1b3e485830a2fd3af0f4b07113cf23496"
-// datum_hash: "be29a8209c94cffae2d94e51721439074472dc2a3dfef4da8342c989ca8a39ad"
-// policy_id: "5f1dd3192cbdaa2c1a91560a6147466efb18d33a5d6516b266ce6b6f"
-export const POpenDatum = Data.Object({
+data PBondWriterDatum (s :: S)
+  = PBondWriterDatum (Term s (PDataRecord
+      '[ "epoRewards"         ':= PValue 'Sorted 'NoGuarantees      -- ^ monthly value gain promised
+       , "duration"           ':= PEpochTime                        -- ^ duration of the loan in epochs
+       , "bondSymbol"         ':= PCurrencySymbol                   -- ^ bond token currency symbol
+       , "tokenName"          ':= PTokenName                        -- ^ token name of both Uniqueness and Ownership NFTs
+       , "bondAmount"         ':= PInteger                          -- ^ amount of bond
+       , "buffer"             ':= PEpochTime                        -- ^ how many epochs in advance the position needs to be maintained
+       , "otmFee"             ':= PBasisPoints                      -- ^ Optim fee
+       , "stakeKey"           ':= PStakingCredential                -- ^ stake key for open state
+       , "permissioned"       ':= PMaybeData (PAsData PPubKeyHash)  -- ^ optional key required to purchase this bond
+       ]))
+  deriving stock (Generic)
+  deriving anyclass (PlutusType, PIsData, PDataFields, PTryFrom PData)
+instance DerivePlutusType PBondWriterDatum where type DPTStrat _ = PlutusTypeData
+ */
+export const PBondWriterDatum = Data.Object({
   epoRewards: Value,
   duration: Data.BigInt,
   bondSymbol: Data.String,
@@ -163,10 +160,10 @@ export const POpenDatum = Data.Object({
   bondAmount: Data.BigInt,
   buffer: Data.BigInt,
   otmFee: Data.BigInt,
-  ogLender: Data.String,
-  start: Data.BigInt,
+  stakeKey: Address,
+  permissioned: Data.Nullable(Data.Tuple([Data.String])),
 });
-export type POpenDatum = Data.Static<typeof POpenDatum>;
+export type PBondWriterDatum = Data.Static<typeof PBondWriterDatum>;
 
 /*
 newtype POpenPoolDatum (s :: S)
@@ -218,25 +215,27 @@ export const PClosedPoolDatum = Data.Object({
 });
 export type PClosedPoolDatum = Data.Static<typeof PClosedPoolDatum>;
 
-
 /*
-data PBondWriterDatum (s :: S)
-  = PBondWriterDatum (Term s (PDataRecord
-      '[ "epoRewards"         ':= PValue 'Sorted 'NoGuarantees      -- ^ monthly value gain promised
-       , "duration"           ':= PEpochTime                        -- ^ duration of the loan in epochs
-       , "bondSymbol"         ':= PCurrencySymbol                   -- ^ bond token currency symbol
-       , "tokenName"          ':= PTokenName                        -- ^ token name of both Uniqueness and Ownership NFTs
-       , "bondAmount"         ':= PInteger                          -- ^ amount of bond
-       , "buffer"             ':= PEpochTime                        -- ^ how many epochs in advance the position needs to be maintained
-       , "otmFee"             ':= PBasisPoints                      -- ^ Optim fee
-       , "stakeKey"           ':= PStakingCredential                -- ^ stake key for open state
-       , "permissioned"       ':= PMaybeData (PAsData PPubKeyHash)  -- ^ optional key required to purchase this bond
-       ]))
-  deriving stock (Generic)
-  deriving anyclass (PlutusType, PIsData, PDataFields, PTryFrom PData)
-instance DerivePlutusType PBondWriterDatum where type DPTStrat _ = PlutusTypeData
- */
-export const PBondWriterDatum = Data.Object({
+data POpenDatum (s :: S)
+  = POpenDatum (Term s (PDataRecord
+'[ "epoRewards"      ':= PValue 'Sorted 'NoGuarantees  -- ^ monthly lovelace value gain promised
+  , "duration"        ':= PEpochTime                    -- ^ duration of the loan in epochs
+  , "bondSymbol"      ':= PCurrencySymbol
+  , "tokenName"       ':= PTokenName                    -- ^ token name of both Uniqueness and Ownership NFTs
+  , "bondAmount"      ':= PInteger
+  , "buffer"          ':= PEpochTime                    -- ^ number of epochs paid in advance
+  , "otmFee"          ':= PBasisPoints                  -- ^ Optim fee
+  , "ogLender"        ':= PPubKeyHash                   -- ^ used in staking the funds back to them
+  , "start"           ':= PEpochTime
+]))
+deriving stock (Generic)
+deriving anyclass (PlutusType, PIsData, PDataFields, PTryFrom PData)
+instance DerivePlutusType POpenDatum where type DPTStrat _ = PlutusTypeData
+*/
+// asset_name: "82f2356d37f02d3f4c1d3ad2af585ea1b3e485830a2fd3af0f4b07113cf23496"
+// datum_hash: "be29a8209c94cffae2d94e51721439074472dc2a3dfef4da8342c989ca8a39ad"
+// policy_id: "5f1dd3192cbdaa2c1a91560a6147466efb18d33a5d6516b266ce6b6f"
+export const POpenDatum = Data.Object({
   epoRewards: Value,
   duration: Data.BigInt,
   bondSymbol: Data.String,
@@ -244,10 +243,11 @@ export const PBondWriterDatum = Data.Object({
   bondAmount: Data.BigInt,
   buffer: Data.BigInt,
   otmFee: Data.BigInt,
-  stakeKey: Address,
-  permissioned: Data.Nullable(Data.Tuple([Data.String])),
+  ogLender: Data.String,
+  start: Data.BigInt,
 });
-export type PBondWriterDatum = Data.Static<typeof PBondWriterDatum>;
+export type POpenDatum = Data.Static<typeof POpenDatum>;
+
 export const PBondUnknownDatum = Data.Object({
   unknown: Data.Array(Data.Array(Data.Any)),
 });
