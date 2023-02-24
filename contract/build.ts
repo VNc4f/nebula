@@ -68,10 +68,10 @@ await Deno.writeTextFile(
     .replaceAll('from "lucid-cardano";', 'from "./lucid-cardano/mod.js";')
 );
 
-Deno.removeSync("../../nebula-deploy/mod.js");
+Deno.removeSync("../../../spacebudz/nebula-deploy/mod.js");
 Deno.copyFileSync(
   "./dist/web/mod.js",
-  "../../nebula-deploy/mod.js",
+  "../../../spacebudz/nebula-deploy/mod.js",
 );
 
 // await esbuild.build({
