@@ -1,5 +1,6 @@
 import {
   Address,
+  AddressDetails,
   applyParamsToScript,
   Assets,
   C,
@@ -23,13 +24,25 @@ import {
   TxHash,
   Unit,
   UTxO,
-  AddressDetails,
 } from "../../deps.ts";
-import scripts from "./nebula/plutus.json" assert {type: "json"};
-import {fromAddress, fromAssets, sortAsc, sortDesc, toAddress, toAssets, toOwner,} from "../../common/utils.ts";
+import scripts from "./nebula/plutus.json" assert { type: "json" };
+import {
+  fromAddress,
+  fromAssets,
+  sortAsc,
+  sortDesc,
+  toAddress,
+  toAssets,
+} from "../../common/utils.ts";
 import * as D from "../../common/contract.types.ts";
-import {AssetName, Constraints, ContractConfig, NameAndQuantity, RoyaltyRecipient,} from "./types.ts";
-import {budConfig} from "./config.ts";
+import {
+  AssetName,
+  Constraints,
+  ContractConfig,
+  NameAndQuantity,
+  RoyaltyRecipient,
+} from "./types.ts";
+import { budConfig } from "./config.ts";
 
 export class Contract {
   lucid: Lucid;
@@ -52,13 +65,14 @@ export class Contract {
     this.lucid = lucid;
     this.config = config;
 
-    const {policyId, assetName} = fromUnit(this.config.royaltyToken);
+    const { policyId, assetName } = fromUnit(this.config.royaltyToken);
 
     if (this.config.royaltyToken === SPACEBUDZ_ROYALTY_TOKEN) {
       this.fundProtocol = false;
     } else {
       this.fundProtocol = this.lucid.network === "Mainnet"
-        ? this.config.fundProtocol || typeof this.config.fundProtocol === "undefined"
+        ? this.config.fundProtocol ||
+          typeof this.config.fundProtocol === "undefined"
         : false;
     }
 
@@ -74,7 +88,7 @@ export class Contract {
         scripts.validators.find((v) => v.title === "nebula")!.compiledCode,
         [
           this.fundProtocol ? protocolKey : null,
-          {policyId, assetName: assetName || ""},
+          { policyId, assetName: assetName || "" },
         ],
         D.TradeParams,
       ),
@@ -87,8 +101,8 @@ export class Contract {
     this.mintPolicy = lucid.utils.nativeScriptFromJson({
       type: "any",
       scripts: [
-        {type: "after", slot: 0},
-        {type: "sig", keyHash: this.tradeHash},
+        { type: "after", slot: 0 },
+        { type: "sig", keyHash: this.tradeHash },
       ],
     });
     this.mintPolicyId = lucid.utils.mintingPolicyToId(this.mintPolicy);
@@ -120,7 +134,7 @@ export class Contract {
     sellOptions: { bidUtxo: UTxO; assetName?: string }[],
   ): Promise<TxHash> {
     const sellOrders = (await Promise.all(
-      sellOptions.map(({bidUtxo, assetName}) =>
+      sellOptions.map(({ bidUtxo, assetName }) =>
         this._sell(bidUtxo, assetName)
       ),
     ))
@@ -292,7 +306,7 @@ export class Contract {
       Data.to<D.TradeAction>("Cancel", D.TradeAction),
     ).payToContract(bidUtxo.address, {
       inline: bidUtxo.datum!,
-    }, {...bidUtxo.assets, lovelace})
+    }, { ...bidUtxo.assets, lovelace })
       .addSignerKey(ownerKey)
       .compose(
         refScripts.trade
@@ -414,33 +428,39 @@ export class Contract {
         unit !== "lovelace"
       );
       return units.every((unit) =>
-          unit.startsWith(this.mintPolicyId) ||
-          unit.startsWith(this.config.policyId)
-        ) &&
+        unit.startsWith(this.mintPolicyId) ||
+        unit.startsWith(this.config.policyId)
+      ) &&
         (option === "Swap" ? units.length > 1 : units.length === 1);
     }).sort(sortDesc);
   }
 
   async utxoByUnit(policyId: PolicyId, assetName: AssetName): Promise<UTxO> {
-    return await this.lucid.utxoByUnit(toUnit(policyId, assetName))
+    return await this.lucid.utxoByUnit(toUnit(policyId, assetName));
   }
 
   async utxosByUnit(policyId: PolicyId, assetName: AssetName): Promise<UTxO[]> {
-    return await this.lucid.utxosByUnit(toUnit(policyId, assetName))
+    return await this.lucid.utxosByUnit(toUnit(policyId, assetName));
   }
 
-  async utxosMintByUnit(policyId: PolicyId, assetName: AssetName): Promise<UTxO[]> {
-    return await this.lucid.utxosMintByUnit(toUnit(policyId, assetName))
+  async utxosMintByUnit(
+    policyId: PolicyId,
+    assetName: AssetName,
+  ): Promise<UTxO[]> {
+    return await this.lucid.utxosMintByUnit(toUnit(policyId, assetName));
   }
 
-  async getUtxosByHash(txHash: TxHash, ignoreLovelace: boolean): Promise<UTxO[]> {
+  async getUtxosByHash(
+    txHash: TxHash,
+    ignoreLovelace: boolean,
+  ): Promise<UTxO[]> {
     const utxos = await this.lucid.utxosByHash(txHash);
 
-    return (ignoreLovelace ? utxos.filter((utxo: UTxO) => {
-      return Object.keys(utxo.assets).filter((unit) =>
-        unit !== "lovelace"
-      );
-    }) : utxos).sort(sortDesc)
+    return (ignoreLovelace
+      ? utxos.filter((utxo: UTxO) => {
+        return Object.keys(utxo.assets).filter((unit) => unit !== "lovelace");
+      })
+      : utxos).sort(sortDesc);
   }
 
   getDatumJson(datumHash: DatumHash): unknown {
@@ -448,56 +468,86 @@ export class Contract {
   }
 
   async optimOpenDatumOf(utxo: UTxO): Promise<D.POpenDatum> {
-    return await this.lucid.datumOf<D.POpenDatum>(utxo, D.POpenDatum)
+    return await this.lucid.datumOf<D.POpenDatum>(utxo, D.POpenDatum);
   }
 
   async optimOpenPoolDatumOf(utxo: UTxO): Promise<D.POpenPoolDatum> {
-    return await this.lucid.datumOf<D.POpenPoolDatum>(utxo, D.POpenPoolDatum)
+    return await this.lucid.datumOf<D.POpenPoolDatum>(utxo, D.POpenPoolDatum);
   }
 
   async optimClosedPoolDatumOf(utxo: UTxO): Promise<D.PClosedPoolDatum> {
-    return await this.lucid.datumOf<D.PClosedPoolDatum>(utxo, D.PClosedPoolDatum)
+    return await this.lucid.datumOf<D.PClosedPoolDatum>(
+      utxo,
+      D.PClosedPoolDatum,
+    );
   }
 
   async optimBondWriterDatumOf(utxo: UTxO): Promise<D.PBondWriterDatum> {
-    return await this.lucid.datumOf<D.PBondWriterDatum>(utxo, D.PBondWriterDatum)
+    return await this.lucid.datumOf<D.PBondWriterDatum>(
+      utxo,
+      D.PBondWriterDatum,
+    );
   }
 
   balanceOf(raw: Datum): D.Balance {
     const amount = Data.deserialize(C.PlutusData.from_bytes(fromHex(raw)));
-    if (typeof amount === 'bigint') {
-      return {lovelace: amount} as D.Balance
+    if (typeof amount === "bigint") {
+      return { lovelace: amount } as D.Balance;
     } else {
-      return Data.castFrom<D.Balance>(amount, D.Balance)
+      return Data.castFrom<D.Balance>(amount, D.Balance);
     }
   }
 
   addressOf(cbor: string): AddressDetails {
-    return this.lucid.utils.getAddressDetails(cbor)
+    return this.lucid.utils.getAddressDetails(cbor);
   }
 
   sampleToCbor(): Datum | Redeemer {
     return Data.to<D.ListingSample>({
-        owner: "31313131313131",
-        amount: 5252352323n,
-        private: false,
-        tuple: [new Map().set("5f1dd3192cbdaa2c1a91560a6147466efb18d33a5d6516b266ce6b6f", new Map().set("82f2356d37f02d3f4c1d3ad2af585ea1b3e485830a2fd3af0f4b07113cf23496", 100n))],
-        tuple_constr: [new Map().set("4702f1ff21a54f728a59b3f5f0f351891c99015a2158b816c721ea72", new Map().set("82f2356d37f02d3f4c1d3ad2af585ea1b3e485830a2fd3af0f4b07113cf23496", 1000n))],
-        enum: "Sell",
-        nullable: null,
-        obj: {
-          policyId: "5fb0abdfd1b8d096da6ffd7d3f5a8212a318447528f91a925e7fcd0f",
-          assetName: "82f2356d37f02d3f4c1d3ad2af585ea1b3e485830a2fd3af0f4b07113cf23496"
-        },
-        arr: ["5fb0abdfd1b8d096da6ffd7d3f5a8212a318447528f91a925e7fcd0f", "5f1dd3192cbdaa2c1a91560a6147466efb18d33a5d6516b266ce6b6f"],
-        map: new Map().set("68fa031807f52dfea48be90d3ba788935386126b63463c84c31baac0", new Map().set("82f2356d37f02d3f4c1d3ad2af585ea1b3e485830a2fd3af0f4b07113cf23496", 10000n)),
+      owner: "31313131313131",
+      amount: 5252352323n,
+      private: false,
+      tuple: [
+        new Map().set(
+          "5f1dd3192cbdaa2c1a91560a6147466efb18d33a5d6516b266ce6b6f",
+          new Map().set(
+            "82f2356d37f02d3f4c1d3ad2af585ea1b3e485830a2fd3af0f4b07113cf23496",
+            100n,
+          ),
+        ),
+      ],
+      tuple_constr: [
+        new Map().set(
+          "4702f1ff21a54f728a59b3f5f0f351891c99015a2158b816c721ea72",
+          new Map().set(
+            "82f2356d37f02d3f4c1d3ad2af585ea1b3e485830a2fd3af0f4b07113cf23496",
+            1000n,
+          ),
+        ),
+      ],
+      enum: "Sell",
+      nullable: null,
+      obj: {
+        policyId: "5fb0abdfd1b8d096da6ffd7d3f5a8212a318447528f91a925e7fcd0f",
+        assetName:
+          "82f2356d37f02d3f4c1d3ad2af585ea1b3e485830a2fd3af0f4b07113cf23496",
       },
-      D.ListingSample,
-    )
+      arr: [
+        "5fb0abdfd1b8d096da6ffd7d3f5a8212a318447528f91a925e7fcd0f",
+        "5f1dd3192cbdaa2c1a91560a6147466efb18d33a5d6516b266ce6b6f",
+      ],
+      map: new Map().set(
+        "68fa031807f52dfea48be90d3ba788935386126b63463c84c31baac0",
+        new Map().set(
+          "82f2356d37f02d3f4c1d3ad2af585ea1b3e485830a2fd3af0f4b07113cf23496",
+          10000n,
+        ),
+      ),
+    }, D.ListingSample);
   }
 
   sampleFromCbor(raw: Datum | Redeemer): D.ListingSample {
-    return Data.from<D.ListingSample>(raw, D.ListingSample)
+    return Data.from<D.ListingSample>(raw, D.ListingSample);
   }
 
   /**
@@ -526,7 +576,7 @@ export class Contract {
         scripts.validators.find((v) => v.title === "oneshot")!.compiledCode,
         [
           {
-            txHash: {hash: utxo.txHash},
+            txHash: { hash: utxo.txHash },
             outputIndex: BigInt(utxo.outputIndex),
           },
         ],
@@ -564,8 +614,8 @@ export class Contract {
       }, Data.void())
       .payToAddressWithData(
         ownersAddress,
-        {inline: Data.to<D.RoyaltyInfo>(royaltyInfo, D.RoyaltyInfo)},
-        {[royaltyUnit]: 1n},
+        { inline: Data.to<D.RoyaltyInfo>(royaltyInfo, D.RoyaltyInfo) },
+        { [royaltyUnit]: 1n },
       )
       .attachMintingPolicy(royaltyMintingPolicy)
       .complete();
@@ -577,7 +627,7 @@ export class Contract {
       "You can now paste the Royalty Token into the Contract config.\n",
     );
 
-    return {txHash: await txSigned.submit(), royaltyToken: royaltyUnit};
+    return { txHash: await txSigned.submit(), royaltyToken: royaltyUnit };
   }
 
   /** Deploy necessary scripts to reduce tx costs heavily. */
@@ -625,7 +675,7 @@ export class Contract {
   }
 
   async getRoyalty(): Promise<RoyaltyRecipient[]> {
-    const {royaltyInfo} = await this.getRoyaltyInfo();
+    const { royaltyInfo } = await this.getRoyaltyInfo();
 
     return royaltyInfo.recipients.map((recipient) => ({
       address: toAddress(recipient.address, this.lucid),
@@ -636,12 +686,12 @@ export class Contract {
   }
 
   async getDeployedScripts(): Promise<{ trade: UTxO | null }> {
-    if (!this.config.deployHash) return {trade: null};
+    if (!this.config.deployHash) return { trade: null };
     const [trade] = await this.lucid.utxosByOutRef([{
       txHash: this.config.deployHash,
       outputIndex: 0,
     }]);
-    return {trade};
+    return { trade };
   }
 
   getContractHashes(): {
@@ -697,7 +747,7 @@ export class Contract {
       .collectFrom([royaltyUtxo])
       .payToAddressWithData(
         ownerAddress,
-        {inline: Data.to<D.RoyaltyInfo>(royaltyInfo, D.RoyaltyInfo)},
+        { inline: Data.to<D.RoyaltyInfo>(royaltyInfo, D.RoyaltyInfo) },
         royaltyUtxo.assets,
       )
       .attachSpendingValidator(ownersScript)
@@ -726,7 +776,7 @@ export class Contract {
       throw new Error("Needs at least one asset.");
     }
     const ownerAddress = await this.lucid.wallet.address();
-    const {stakeCredential} = this.lucid.utils
+    const { stakeCredential } = this.lucid.utils
       .getAddressDetails(
         ownerAddress,
       );
@@ -780,7 +830,7 @@ export class Contract {
       throw new Error("Needs at least one asset name.");
     }
     const ownerAddress = await this.lucid.wallet.address();
-    const {stakeCredential} = this.lucid.utils.getAddressDetails(
+    const { stakeCredential } = this.lucid.utils.getAddressDetails(
       ownerAddress,
     );
     const bidAssets: Assets = Object.fromEntries(
@@ -834,7 +884,7 @@ export class Contract {
     constraints?: Constraints,
   ): Promise<Tx> {
     const ownerAddress = await this.lucid.wallet.address();
-    const {stakeCredential} = this.lucid.utils.getAddressDetails(
+    const { stakeCredential } = this.lucid.utils.getAddressDetails(
       ownerAddress,
     );
 
@@ -854,11 +904,11 @@ export class Contract {
             constraints?.types ? constraints.types.map(fromText) : [],
             constraints?.traits
               ? constraints.traits.map((
-                  {negation, trait},
-                ) =>
-                  negation
-                    ? {Excluded: [fromText(trait)]}
-                    : {Included: [fromText(trait)]}
+                { negation, trait },
+              ) =>
+                negation
+                  ? { Excluded: [fromText(trait)] }
+                  : { Included: [fromText(trait)] }
               )
               : [],
           ],
@@ -893,7 +943,7 @@ export class Contract {
   ): Promise<Tx> {
     if (
       [requesting.constraints, requesting.specific].filter((t) => t).length !==
-      1
+        1
     ) {
       throw new Error(
         "You can/must have either constraints or a specific request.",
@@ -906,7 +956,7 @@ export class Contract {
       throw new Error("Needs at least one requesting asset name.");
     }
     const ownerAddress = await this.lucid.wallet.address();
-    const {stakeCredential} = this.lucid.utils.getAddressDetails(
+    const { stakeCredential } = this.lucid.utils.getAddressDetails(
       ownerAddress,
     );
 
@@ -942,11 +992,11 @@ export class Contract {
                 : [],
               requesting.constraints?.traits
                 ? requesting.constraints.traits.map((
-                    {negation, trait},
-                  ) =>
-                    negation
-                      ? {Excluded: [fromText(trait)]}
-                      : {Included: [fromText(trait)]}
+                  { negation, trait },
+                ) =>
+                  negation
+                    ? { Excluded: [fromText(trait)] }
+                    : { Included: [fromText(trait)] }
                 )
                 : [],
             ],
@@ -1020,7 +1070,7 @@ export class Contract {
 
     const bidDetails = tradeDatum.Bid[0];
 
-    const {lovelace} = bidUtxo.assets;
+    const { lovelace } = bidUtxo.assets;
     const bidToken = Object.keys(bidUtxo.assets).find((unit) =>
       unit.startsWith(this.mintPolicyId)
     );
@@ -1028,7 +1078,7 @@ export class Contract {
 
     const owner: Address = toAddress(bidDetails.owner, this.lucid);
 
-    const {requestedAssets, refNFT} = (() => {
+    const { requestedAssets, refNFT } = (() => {
       if ("SpecificValue" in bidDetails.requestedOption) {
         return {
           requestedAssets: toAssets(
@@ -1064,7 +1114,7 @@ export class Contract {
 
     const paymentDatum = Data.to<D.PaymentDatum>({
       outRef: {
-        txHash: {hash: bidUtxo.txHash},
+        txHash: { hash: bidUtxo.txHash },
         outputIndex: BigInt(bidUtxo.outputIndex),
       },
     }, D.PaymentDatum);
@@ -1095,7 +1145,7 @@ export class Contract {
       .payToAddressWithData(owner, {
         inline: paymentDatum,
       }, requestedAssets)
-      .mintAssets({[bidToken]: -1n})
+      .mintAssets({ [bidToken]: -1n })
       .compose(
         this.fundProtocol
           ? this.lucid.newTx().payToAddress(PROTOCOL_FUND_ADDRESS, {})
@@ -1138,7 +1188,7 @@ export class Contract {
         [bidUtxo],
         Data.to<D.TradeAction>("Cancel", D.TradeAction),
       )
-      .mintAssets({[bidToken]: -1n})
+      .mintAssets({ [bidToken]: -1n })
       .validFrom(this.lucid.utils.slotToUnixTime(1000))
       .addSignerKey(ownerKey)
       .compose(
@@ -1164,7 +1214,7 @@ export class Contract {
 
     const paymentDatum = Data.to<D.PaymentDatum>({
       outRef: {
-        txHash: {hash: listingUtxo.txHash},
+        txHash: { hash: listingUtxo.txHash },
         outputIndex: BigInt(listingUtxo.outputIndex),
       },
     }, D.PaymentDatum);
@@ -1177,11 +1227,11 @@ export class Contract {
     )
       .compose(
         await (async () => {
-          const {tx, remainingLovelace} = await this._payFee(
+          const { tx, remainingLovelace } = await this._payFee(
             requestedLovelace,
             paymentDatum,
           );
-          return tx.payToAddressWithData(owner, {inline: paymentDatum}, {
+          return tx.payToAddressWithData(owner, { inline: paymentDatum }, {
             lovelace: remainingLovelace,
           });
         })(),
@@ -1212,7 +1262,7 @@ export class Contract {
   ): Promise<{ tx: Tx; remainingLovelace: Lovelace }> {
     const tx = this.lucid.newTx();
 
-    const {utxo, royaltyInfo} = await this.getRoyaltyInfo();
+    const { utxo, royaltyInfo } = await this.getRoyaltyInfo();
     let remainingLovelace = lovelace;
 
     const recipients = royaltyInfo.recipients;
@@ -1230,12 +1280,12 @@ export class Contract {
       const adjustedFee = minFee && feeToPay < minFee
         ? minFee
         : maxFee && feeToPay > maxFee
-          ? maxFee
-          : feeToPay;
+        ? maxFee
+        : feeToPay;
 
       remainingLovelace -= adjustedFee;
 
-      tx.payToAddressWithData(address, {inline: paymentDatum}, {
+      tx.payToAddressWithData(address, { inline: paymentDatum }, {
         lovelace: adjustedFee,
       });
     }
@@ -1245,7 +1295,7 @@ export class Contract {
     // max(0, remainingLovelace)
     remainingLovelace = remainingLovelace < 0n ? 0n : remainingLovelace;
 
-    return {tx, remainingLovelace};
+    return { tx, remainingLovelace };
   }
 
   /**
@@ -1267,8 +1317,8 @@ export class Contract {
         const adjustedFee = minFee && feeToPay < minFee
           ? minFee
           : maxFee && feeToPay > maxFee
-            ? maxFee
-            : feeToPay;
+          ? maxFee
+          : feeToPay;
 
         tx.payToAddress(recipient.address, {
           lovelace: adjustedFee,
