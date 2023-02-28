@@ -108,7 +108,7 @@ export type TradeParams = Data.Static<typeof TradeParams>;
 
 export const Balance = Data.Object({
   lovelace: Data.BigInt,
-  assets: Data.Nullable(Value),
+  assets: Value,
 }, false);
 export type Balance = Data.Static<typeof Balance>;
 

@@ -23,9 +23,10 @@ import {
   TxHash,
   Unit,
   UTxO,
+  AddressDetails,
 } from "../../deps.ts";
 import scripts from "./nebula/plutus.json" assert {type: "json"};
-import {fromAddress, fromAssets, sortAsc, sortDesc, toAddress, toAssets,} from "../../common/utils.ts";
+import {fromAddress, fromAssets, sortAsc, sortDesc, toAddress, toAssets, toOwner,} from "../../common/utils.ts";
 import * as D from "../../common/contract.types.ts";
 import {AssetName, Constraints, ContractConfig, NameAndQuantity, RoyaltyRecipient,} from "./types.ts";
 import {budConfig} from "./config.ts";
@@ -471,8 +472,8 @@ export class Contract {
     }
   }
 
-  addressOf(raw: Datum): string {
-    return C.Address.from_bytes(fromHex(raw)).to_bech32("")
+  addressOf(cbor: string): AddressDetails {
+    return this.lucid.utils.getAddressDetails(cbor)
   }
 
   sampleToCbor(): Datum | Redeemer {
