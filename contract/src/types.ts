@@ -1,4 +1,14 @@
-import { Address, Lovelace, PolicyId, TxHash, Unit } from "../../deps.ts";
+import {
+  Address,
+  Lovelace,
+  MintingPolicy,
+  OutRef,
+  PolicyId,
+  ScriptHash,
+  SpendingValidator,
+  TxHash,
+  Unit,
+} from "../../deps.ts";
 
 export type ContractConfig = {
   royaltyToken: Unit;
@@ -26,3 +36,34 @@ export type Constraints = {
 
 export type AssetName = string;
 export type NameAndQuantity = Record<AssetName, bigint>;
+
+export type MarketConfig = {
+  policyIdOfBond: PolicyId;
+  policyIdOfEscrow: PolicyId;
+  owner: Address;
+  deployHash: TxHash;
+  marketFee: MarketFee;
+
+  tradeValidator: SpendingValidator;
+  tradeHash: ScriptHash;
+  tradeAddress: Address;
+  mintPolicy: MintingPolicy;
+  mintPolicyId: PolicyId;
+};
+
+export type MarketFee = {
+  address: Address;
+  /** Variable fee. e.g.: 0.04 (4%) */
+  feeBuyer: bigint;
+  feeSeller: bigint;
+  /** Optionally set a minimum absolute fee. */
+  minFee?: Lovelace | null;
+  /** Optionally set a maximum absolute fee. */
+  maxFee?: Lovelace | null;
+};
+
+export type BondInfo = {
+  outRef: OutRef;
+  bondTokenId: AssetName;
+  quantity: bigint;
+};

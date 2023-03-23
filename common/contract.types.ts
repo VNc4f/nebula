@@ -252,3 +252,63 @@ export const PBondUnknownDatum = Data.Object({
   unknown: Data.Array(Data.Array(Data.Any)),
 });
 export type PBondUnknownDatum = Data.Static<typeof PBondUnknownDatum>;
+
+
+
+
+
+
+export const SlotConfigNetwork = Data.Object({
+  zeroTime: Data.BigInt,
+  zeroSlot: Data.BigInt,
+  slotLength: Data.BigInt,
+});
+export type SlotConfigNetwork = Data.Static<typeof SlotConfigNetwork>;
+
+export const BondMarketConfig = Data.Object({
+  bondPolicyId:Data.String,
+  escrowPolicyId:Data.String,
+  // 1 bond = 100 ADA = 100_000_000 lovelace. default: 100 ADA = 100_000_000 lovelace
+  bondFaceValue: Data.BigInt,
+  // 1 year = 365 days/ 5 days per epoch = 73 epoch. default: 73
+  yearToEpoch: Data.BigInt,
+  // default: 1647899091000
+  epochBoundary: Data.BigInt,
+  // Each Cardano epoch consists of a number of slots, where each slot lasts for one second
+  // A Cardano epoch currently includes 432,000 slots (5 days)
+  // default: 432_000_000
+  epochLength: Data.BigInt,
+  minPrepaid: Data.BigInt,
+  // default: epoch 327
+  epochBoundaryAsEpoch: Data.BigInt,
+  marketFeeAddress: Address,
+  // value in range 0001 -> 9999 default: 1% per yield == 100
+  marketFeeBuyer: Data.BigInt,
+  // value in range 0001 -> 9999 default: 1% per yield == 100
+  marketFeeSeller: Data.BigInt,
+  slotConfigNetwork: SlotConfigNetwork,
+});
+export type BondMarketConfig = Data.Static<typeof BondMarketConfig>;
+
+export const ListingAction = Data.Enum([
+  Data.Literal("Sell"),
+  Data.Literal("Update"),
+  Data.Literal("Buy"),
+  Data.Literal("WithdrawForTest"),
+]);
+export type ListingAction = Data.Static<typeof ListingAction>;
+
+export const ListingDatum = Data.Object({
+  owner: Address,
+  requestedYield: Data.BigInt,
+});
+export type ListingDatum = Data.Static<typeof ListingDatum>;
+
+export const BiddingDatum = Data.Object({
+  owner: Address,
+  fromEpoch: Data.BigInt,
+  toEpoch: Data.BigInt,
+  quantity: Data.BigInt,
+  requestedYield: Data.BigInt,
+});
+export type BiddingDatum = Data.Static<typeof BiddingDatum>;
