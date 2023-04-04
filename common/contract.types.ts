@@ -6,18 +6,21 @@ export const Credential = Data.Enum([
 ]);
 export type Credential = Data.Static<typeof Credential>;
 
+export const StakeCredential = Data.Enum([
+  Data.Object({Inline: Data.Tuple([Credential])}),
+  Data.Object({
+    Pointer: Data.Tuple([Data.Object({
+      slotNumber: Data.BigInt,
+      transactionIndex: Data.BigInt,
+      certificateIndex: Data.BigInt,
+    })]),
+  }),
+]);
+export type StakeCredential = Data.Static<typeof StakeCredential>;
+
 export const Address = Data.Object({
   paymentCredential: Credential,
-  stakeCredential: Data.Nullable(Data.Enum([
-    Data.Object({Inline: Data.Tuple([Credential])}),
-    Data.Object({
-      Pointer: Data.Tuple([Data.Object({
-        slotNumber: Data.BigInt,
-        transactionIndex: Data.BigInt,
-        certificateIndex: Data.BigInt,
-      })]),
-    }),
-  ])),
+  stakeCredential: Data.Nullable(StakeCredential),
 });
 export type Address = Data.Static<typeof Address>;
 
@@ -160,7 +163,7 @@ export const PBondWriterDatum = Data.Object({
   bondAmount: Data.BigInt,
   buffer: Data.BigInt,
   otmFee: Data.BigInt,
-  stakeKey: Address,
+  stakeKey: StakeCredential,
   permissioned: Data.Nullable(Data.Tuple([Data.String])),
 });
 export type PBondWriterDatum = Data.Static<typeof PBondWriterDatum>;
