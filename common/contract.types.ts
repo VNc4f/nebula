@@ -289,7 +289,7 @@ export const BondMarketConfig = Data.Object({
   marketFeeBuyer: Data.BigInt,
   // value in range 0001 -> 9999 default: 1% per yield == 100
   marketFeeSeller: Data.BigInt,
-  slotConfigNetwork: SlotConfigNetwork,
+  SlotConfigNetwork: SlotConfigNetwork,
 });
 export type BondMarketConfig = Data.Static<typeof BondMarketConfig>;
 
@@ -306,6 +306,81 @@ export const ListingDatum = Data.Object({
   requestedYield: Data.BigInt,
 });
 export type ListingDatum = Data.Static<typeof ListingDatum>;
+
+
+
+export const CadogoBondTradeAction = Data.Enum([
+  Data.Literal("Update"),
+  Data.Literal("Buy"),
+  Data.Literal("Sell"),
+  Data.Literal("Withdraw"),
+]);
+export type CadogoBondTradeAction = Data.Static<typeof CadogoBondTradeAction>;
+
+export const CadogoBondListingDatum = Data.Object({
+  ownerPaymentKey: Data.String,
+  ownerStakeKey: Data.Nullable(Data.String),
+  requestedYield: Data.BigInt,
+});
+export type CadogoBondListingDatum = Data.Static<typeof CadogoBondListingDatum>;
+
+export const CadogoEpochConfig = Data.Object({
+  // 1 year = 365 days / 5 days per epoch = 73 epoch. default: 73
+  yearToEpoch: Data.BigInt,
+  // default: 1_647_899_091_000
+  epochBoundary: Data.BigInt,
+  // default: epoch 327+1
+  epochBoundaryAsEpoch: Data.BigInt,
+  // Each Cardano epoch consists of a number of slots, where each slot lasts for one second
+  // A Cardano epoch currently includes 432,000 slots (5 days)
+  // mainnet: 432_000_000
+  // preview: 1_800_000
+  epochLength: Data.BigInt,
+  // base is 5 days = 432_000_000
+  epochLengthBase: Data.BigInt,
+});
+export type CadogoEpochConfig = Data.Static<typeof CadogoEpochConfig>;
+
+export const CadogoBondConfig = Data.Object({
+  bondPolicyId: Data.String,
+  escrowPolicyId: Data.String,
+  // basis_points reference value, default: 10_000
+  basisPointsRefUnit: Data.BigInt,
+  // range basis_points min = 1, max = 9_999
+  basisPointsMin: Data.BigInt,
+  basisPointsMax: Data.BigInt,
+  // default min prepaid xem not found duration config in dict min_prepaid
+  oneAda2Lovelace: Data.BigInt,
+  // 1 bond = 100 ADA = 100_000_000 lovelace. default: 100 ADA = 100_000_000 lovelace
+  bondFaceValue: Data.BigInt,
+  epochConfig: CadogoEpochConfig,
+});
+export type CadogoBondConfig = Data.Static<typeof CadogoBondConfig>;
+
+export const CadogoBondMarketConfig = Data.Object({
+  address: Address,
+  // value in range 0001 -> 9999 default: 1% per yield == 100
+  buyerFee: Data.BigInt,
+  // value in range 0001 -> 9999 default: 1% per yield == 100
+  sellerFee: Data.BigInt,
+});
+export type CadogoBondMarketConfig = Data.Static<typeof CadogoBondMarketConfig>;
+
+export const CadogoConfig = Data.Object({
+  bond: CadogoBondConfig,
+  market: CadogoBondMarketConfig,
+  slotConfigNetwork: SlotConfigNetwork,
+});
+export type CadogoConfig = Data.Static<typeof CadogoConfig>;
+
+export const CadogoMarketParams = Data.Tuple([
+  CadogoConfig,
+]);
+export type CadogoMarketParams = Data.Static<typeof CadogoMarketParams>;
+
+
+
+
 
 export const BiddingDatum = Data.Object({
   owner: Address,

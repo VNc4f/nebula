@@ -35,6 +35,7 @@ export type {
   UTxO,
   DatumHash,
   AddressDetails,
+  Credential,
 } from "./lucid-cardano/mod.ts";
 
 export {
