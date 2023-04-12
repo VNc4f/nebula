@@ -124,7 +124,7 @@ export class ContractBond {
       listingUtxo,
       D.CadogoBondListingDatum,
     );
-    if (!("owner" in listingDatum && "requestedYield" in listingDatum)) {
+    if (!("ownerPaymentKey" in listingDatum && "requestedYield" in listingDatum)) {
       throw new Error("Not a listing UTxO");
     }
 
@@ -165,7 +165,7 @@ export class ContractBond {
 
     const refScripts = await this.getDeployedScripts();
 
-    const redeemer = Data.to<D.ListingAction>("Update", D.ListingAction);
+    const redeemer = Data.to<D.CadogoBondTradeAction>("Update", D.CadogoBondTradeAction);
     const tx = await this.lucid.newTx()
       .collectFrom(
         [listingUtxo],
@@ -270,7 +270,7 @@ export class ContractBond {
 
     const tx = await this.lucid.newTx().collectFrom(
       [bidUtxo],
-      Data.to<D.ListingAction>("Update", D.ListingAction),
+      Data.to<D.CadogoBondTradeAction>("Update", D.CadogoBondTradeAction),
     ).payToContract(bidUtxo.address, {
       inline: bidUtxo.datum!,
     }, { ...bidUtxo.assets, lovelace })
@@ -486,7 +486,7 @@ export class ContractBond {
     return this.lucid.utils.getAddressDetails(cbor);
   }
 
-  async ListingDatumOf(listingUtxo: UTxO): Promise<D.CadogoBondListingDatum> {
+  async listingDatumOf(listingUtxo: UTxO): Promise<D.CadogoBondListingDatum> {
     return await this.lucid.datumOf<D.CadogoBondListingDatum>(
       listingUtxo,
       D.CadogoBondListingDatum,
@@ -832,7 +832,7 @@ export class ContractBond {
       listingUtxo,
       D.CadogoBondListingDatum,
     );
-    if (!("owner" in listingDatum && "requestedYield" in listingDatum)) {
+    if (!("ownerPaymentKey" in listingDatum && "requestedYield" in listingDatum)) {
       throw new Error("Not a listing UTxO");
     }
 
@@ -862,7 +862,7 @@ export class ContractBond {
     const refScripts = await this.getDeployedScripts();
     return this.lucid.newTx().collectFrom(
       [listingUtxo],
-      Data.to<D.ListingAction>("Update", D.ListingAction),
+      Data.to<D.CadogoBondTradeAction>("Update", D.CadogoBondTradeAction),
     )
       .addSignerKey(ownerKey)
       .compose(
@@ -942,7 +942,7 @@ export class ContractBond {
     return this.lucid.newTx()
       .collectFrom(
         [bidUtxo],
-        Data.to<D.ListingAction>("Sell", D.ListingAction),
+        Data.to<D.CadogoBondTradeAction>("Sell", D.CadogoBondTradeAction),
       )
       .compose(
         refNFT
@@ -1000,7 +1000,7 @@ export class ContractBond {
     return this.lucid.newTx()
       .collectFrom(
         [bidUtxo],
-        Data.to<D.ListingAction>("Update", D.ListingAction),
+        Data.to<D.CadogoBondTradeAction>("Update", D.CadogoBondTradeAction),
       )
       .mintAssets({ [bidToken]: -1n })
       .validFrom(this.lucid.utils.slotToUnixTime(1000))
@@ -1020,7 +1020,7 @@ export class ContractBond {
       listingUtxo,
       D.CadogoBondListingDatum,
     );
-    if (!("owner" in listingDatum && "requestedYield" in listingDatum)) {
+    if (!("ownerPaymentKey" in listingDatum && "requestedYield" in listingDatum)) {
       throw new Error("Not a listing UTxO");
     }
 
@@ -1052,7 +1052,7 @@ export class ContractBond {
 
     return this.lucid.newTx().collectFrom(
       [listingUtxo],
-      Data.to<D.ListingAction>("Buy", D.ListingAction),
+      Data.to<D.CadogoBondTradeAction>("Buy", D.CadogoBondTradeAction),
     )
       .compose(
         (() => {
