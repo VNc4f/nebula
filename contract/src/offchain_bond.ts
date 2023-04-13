@@ -30,26 +30,28 @@ import * as D from "../../common/contract.types.ts";
 import {
   AssetName,
   BondInfo,
+  CadogoConfig,
   Constraints,
-  MarketConfig,
   NameAndQuantity,
 } from "./types.ts";
 
 export class ContractBond {
   lucid: Lucid;
-  config: MarketConfig;
+  config: CadogoConfig;
 
   constructor(
     lucid: Lucid,
-    config: MarketConfig,
+    config: CadogoConfig,
   ) {
     this.lucid = lucid;
     this.config = config;
   }
 
-  async buy(listingUtxos: UTxO[]): Promise<TxHash> {
+  async buy(listingUtxos: { utxo: UTxO; qty: number }[]): Promise<TxHash> {
     const buyOrders = (await Promise.all(
-      listingUtxos.map((listingUtxo) => this._buy(listingUtxo)),
+      listingUtxos.map((listingUtxo) =>
+        this._buy(listingUtxo.utxo, BigInt(listingUtxo.qty))
+      ),
     ))
       .reduce(
         (prevTx, tx) => prevTx.compose(tx),
@@ -113,18 +115,20 @@ export class ContractBond {
 
   async changeListing(
     listingUtxo: UTxO,
-    assetName: AssetName,
+    _assetName: AssetName,
     quantity: number,
-    requestedYield: number,
+    requestedYield: number | undefined,
   ): Promise<TxHash> {
-    if (!(requestedYield > 1 && requestedYield < 9999)) {
-      throw new Error("requested yield must be in range 1-9999");
-    }
+    // if (!(requestedYield > 1 && requestedYield < 9999)) {
+    //   throw new Error("requested yield must be in range 1-9999");
+    // }
     const listingDatum = await this.lucid.datumOf<D.CadogoBondListingDatum>(
       listingUtxo,
       D.CadogoBondListingDatum,
     );
-    if (!("ownerPaymentKey" in listingDatum && "requestedYield" in listingDatum)) {
+    if (
+      !("ownerPaymentKey" in listingDatum && "requestedYield" in listingDatum)
+    ) {
       throw new Error("Not a listing UTxO");
     }
 
@@ -145,27 +149,33 @@ export class ContractBond {
     const owner: Address = toAddress(listingDatumOwner, this.lucid);
     const ownerKey = paymentCredentialOf(owner).hash;
     const address: Address = await this.lucid.wallet.address();
-
     if (ownerKey !== paymentCredentialOf(address).hash) {
       throw new Error("You are not the owner.");
     }
 
-    const listingAssets: Assets = Object.fromEntries(
-      Object.keys(listingUtxo.assets).filter((
-        unit,
-      ) => unit !== "lovelace").map((unit) => {
-        if (unit == toUnit(this.config.policyIdOfBond, assetName)) {
-          return [unit, BigInt(quantity)];
-        }
-        return [unit, listingUtxo.assets[unit]];
-      }),
+    const listingToken = Object.keys(listingUtxo.assets).find((unit) =>
+      unit.startsWith(this.config.bond.bondPolicyId)
     );
+    if (!listingToken) throw new Error("No listing token found.");
+    if (
+      listingUtxo.assets[listingToken] == BigInt(quantity) &&
+      requestedYield == undefined
+    ) {
+      throw new Error("Listing unnecessary update.");
+    }
 
-    listingDatum.requestedYield = BigInt(requestedYield);
+    if (
+      requestedYield != undefined &&
+      listingDatum.requestedYield != BigInt(requestedYield)
+    ) {
+      listingDatum.requestedYield = BigInt(requestedYield);
+    }
 
     const refScripts = await this.getDeployedScripts();
-
-    const redeemer = Data.to<D.CadogoBondTradeAction>("Update", D.CadogoBondTradeAction);
+    const redeemer = Data.to<D.CadogoBondTradeAction>(
+      "Update",
+      D.CadogoBondTradeAction,
+    );
     const tx = await this.lucid.newTx()
       .collectFrom(
         [listingUtxo],
@@ -176,7 +186,7 @@ export class ContractBond {
           listingDatum,
           D.CadogoBondListingDatum,
         ),
-      }, listingAssets)
+      }, Object.fromEntries([[listingToken, BigInt(quantity)]]))
       .addSignerKey(ownerKey)
       .compose(
         refScripts.trade
@@ -326,7 +336,7 @@ export class ContractBond {
   ): Promise<TxHash> {
     const tx = await this.lucid.newTx()
       .compose(await this._cancelBid(bidUtxo))
-      .compose(await this._buy(listingUtxo))
+      .compose(await this._buy(listingUtxo, 1n))
       .complete();
 
     const txSigned = await tx.sign().complete();
@@ -344,7 +354,7 @@ export class ContractBond {
         .every(
           (unit) =>
             unit.startsWith(this.config.mintPolicyId) ||
-            unit.startsWith(this.config.policyIdOfBond),
+            unit.startsWith(this.config.bond.bondPolicyId),
         )
     );
   }
@@ -360,7 +370,7 @@ export class ContractBond {
     return (await this.lucid.utxosAtWithUnit(
       paymentCredentialOf(this.config.tradeAddress),
       toUnit(
-        this.config.policyIdOfBond,
+        this.config.bond.bondPolicyId,
         assetName,
       ),
     )).filter((utxo: UTxO) => {
@@ -368,7 +378,7 @@ export class ContractBond {
         unit !== "lovelace"
       );
       return units.every((unit) =>
-        unit.startsWith(this.config.policyIdOfBond)
+        unit.startsWith(this.config.bond.bondPolicyId)
       ) &&
         units.length >= 1;
     }).sort(sortAsc);
@@ -377,7 +387,7 @@ export class ContractBond {
   async getBondInfos(assetName: string): Promise<UTxO[]> {
     return (await this.lucid.utxosByUnit(
       toUnit(
-        this.config.policyIdOfEscrow,
+        this.config.bond.escrowPolicyId,
         assetName,
       ),
     )).filter((utxo: UTxO) => {
@@ -385,7 +395,7 @@ export class ContractBond {
         unit !== "lovelace"
       );
       return units.every((unit) =>
-        unit.startsWith(this.config.policyIdOfEscrow)
+        unit.startsWith(this.config.bond.escrowPolicyId)
       ) &&
         units.length >= 1;
     }).sort(sortAsc);
@@ -398,7 +408,7 @@ export class ContractBond {
           unit !== "lovelace"
         );
         return units.some((unit) =>
-          unit.startsWith(this.config.policyIdOfBond)
+          unit.startsWith(this.config.bond.bondPolicyId)
         ) &&
           units.length >= 1;
       },
@@ -407,7 +417,8 @@ export class ContractBond {
         .filter((
           [unit, qty],
         ) =>
-          unit !== "lovelace" && unit.startsWith(this.config.policyIdOfBond) &&
+          unit !== "lovelace" &&
+          unit.startsWith(this.config.bond.bondPolicyId) &&
           qty != undefined && qty > 0
         ).map(([unit, qty]) => {
           return {
@@ -415,7 +426,7 @@ export class ContractBond {
               txHash: utxo.txHash,
               outputIndex: utxo.outputIndex,
             },
-            bondTokenId: unit.replace(this.config.policyIdOfBond, ""),
+            bondTokenId: unit.replace(this.config.bond.bondPolicyId, ""),
             quantity: qty,
           };
         });
@@ -448,7 +459,7 @@ export class ContractBond {
       );
       return units.every((unit) =>
         unit.startsWith(this.config.mintPolicyId) ||
-        unit.startsWith(this.config.policyIdOfBond)
+        unit.startsWith(this.config.bond.bondPolicyId)
       ) &&
         (option === "Swap" ? units.length > 1 : units.length === 1);
     }).sort(sortDesc);
@@ -510,8 +521,8 @@ export class ContractBond {
   } {
     return {
       scriptHash: this.config.tradeHash,
-      bondPolicyId: this.config.policyIdOfBond,
-      escrowPolicyId: this.config.policyIdOfEscrow,
+      bondPolicyId: this.config.bond.bondPolicyId,
+      escrowPolicyId: this.config.bond.escrowPolicyId,
       bidPolicyId: this.config.mintPolicyId,
     };
   }
@@ -553,16 +564,17 @@ export class ContractBond {
       Object.entries(assetsMap).map(
         (
           [assetName, quantity],
-        ) => [toUnit(this.config.policyIdOfBond, assetName), quantity],
+        ) => [toUnit(this.config.bond.bondPolicyId, assetName), quantity],
       ),
     );
 
     const ownerAddressInfo = this.getOwnerAddressInfo(
       fromAddress(ownerAddress),
-      this.lucid,
     );
     if (ownerAddressInfo.paymentKey.type == "Script") {
-      throw new Error("Not support wallet address with payment key is script type");
+      throw new Error(
+        "Not support wallet address with payment key is script type",
+      );
     }
     const inlineListingDatum = Data.to<D.CadogoBondListingDatum>(
       {
@@ -581,16 +593,15 @@ export class ContractBond {
 
   getOwnerAddressInfo(
     address: D.Address,
-    lucid: Lucid,
   ): { paymentKey: Credential; stakeKey: Credential | undefined } {
     return {
       paymentKey: (() => {
         if ("PublicKeyCredential" in address.paymentCredential) {
-          return lucid.utils.keyHashToCredential(
+          return this.lucid.utils.keyHashToCredential(
             address.paymentCredential.PublicKeyCredential[0],
           );
         } else {
-          return lucid.utils.scriptHashToCredential(
+          return this.lucid.utils.scriptHashToCredential(
             address.paymentCredential.ScriptCredential[0],
           );
         }
@@ -599,11 +610,11 @@ export class ContractBond {
         if (!address.stakeCredential) return undefined;
         if ("Inline" in address.stakeCredential) {
           if ("PublicKeyCredential" in address.stakeCredential.Inline[0]) {
-            return lucid.utils.keyHashToCredential(
+            return this.lucid.utils.keyHashToCredential(
               address.stakeCredential.Inline[0].PublicKeyCredential[0],
             );
           } else {
-            return lucid.utils.scriptHashToCredential(
+            return this.lucid.utils.scriptHashToCredential(
               address.stakeCredential.Inline[0].ScriptCredential[0],
             );
           }
@@ -639,7 +650,7 @@ export class ContractBond {
       Object.entries(assetsMap).map(
         (
           [assetName, quantity],
-        ) => [toUnit(this.config.policyIdOfBond, assetName), quantity],
+        ) => [toUnit(this.config.bond.bondPolicyId, assetName), quantity],
       ),
     );
 
@@ -702,7 +713,7 @@ export class ContractBond {
         owner: fromAddress(ownerAddress),
         requestedOption: {
           SpecificSymbolWithConstraints: [
-            this.config.policyIdOfBond,
+            this.config.bond.bondPolicyId,
             constraints?.types ? constraints.types.map(fromText) : [],
             constraints?.traits
               ? constraints.traits.map((
@@ -780,7 +791,7 @@ export class ContractBond {
                   requesting.specific.map(
                     (
                       assetName,
-                    ) => [toUnit(this.config.policyIdOfBond, assetName), 1n],
+                    ) => [toUnit(this.config.bond.bondPolicyId, assetName), 1n],
                   ),
                 ),
               ),
@@ -788,7 +799,7 @@ export class ContractBond {
           }
           : {
             SpecificSymbolWithConstraints: [
-              this.config.policyIdOfBond,
+              this.config.bond.bondPolicyId,
               requesting.constraints?.types
                 ? requesting.constraints.types.map(fromText)
                 : [],
@@ -808,7 +819,7 @@ export class ContractBond {
 
     const offeringAssets: Assets = Object.fromEntries(
       offering.assetNames.map(
-        (assetName) => [toUnit(this.config.policyIdOfBond, assetName), 1n],
+        (assetName) => [toUnit(this.config.bond.bondPolicyId, assetName), 1n],
       ),
     );
     if (offering.lovelace) offeringAssets.lovelace = offering.lovelace;
@@ -827,15 +838,9 @@ export class ContractBond {
       .attachMintingPolicy(this.config.mintPolicy);
   }
 
-  async _cancelListing(listingUtxo: UTxO): Promise<Tx> {
-    const listingDatum = await this.lucid.datumOf<D.CadogoBondListingDatum>(
-      listingUtxo,
-      D.CadogoBondListingDatum,
-    );
-    if (!("ownerPaymentKey" in listingDatum && "requestedYield" in listingDatum)) {
-      throw new Error("Not a listing UTxO");
-    }
-
+  getOwnerAddressOfListingDatum(
+    listingDatum: D.CadogoBondListingDatum,
+  ): Address {
     const listingDatumOwner: D.Address = {
       paymentCredential: {
         PublicKeyCredential: [listingDatum.ownerPaymentKey],
@@ -850,7 +855,20 @@ export class ContractBond {
         }
         : null,
     };
-    const owner: Address = toAddress(listingDatumOwner, this.lucid);
+    return toAddress(listingDatumOwner, this.lucid);
+  }
+
+  async _cancelListing(listingUtxo: UTxO): Promise<Tx> {
+    const listingDatum = await this.lucid.datumOf<D.CadogoBondListingDatum>(
+      listingUtxo,
+      D.CadogoBondListingDatum,
+    );
+    if (
+      !("ownerPaymentKey" in listingDatum && "requestedYield" in listingDatum)
+    ) {
+      throw new Error("Not a listing UTxO");
+    }
+    const owner: Address = this.getOwnerAddressOfListingDatum(listingDatum);
     const ownerKey = paymentCredentialOf(owner).hash;
 
     const address: Address = await this.lucid.wallet.address();
@@ -1015,38 +1033,158 @@ export class ContractBond {
       .attachMintingPolicy(this.config.mintPolicy);
   }
 
-  async _buy(listingUtxo: UTxO): Promise<Tx> {
+  _getMillisecondsOfDay(): bigint {
+    return this.config.bond.epochConfig.epochLength * 86400000n /
+      this.config.bond.epochConfig.epochLengthBase;
+  }
+
+  _relativeEpochToPosixTimeStart(relativeEpoch: bigint): bigint {
+    return (relativeEpoch - this.config.bond.epochConfig.epochBoundaryAsEpoch) *
+        this.config.bond.epochConfig.epochLength +
+      this.config.bond.epochConfig.epochBoundary;
+  }
+
+  _relativeEpochToPosixTimeEnd(relativeEpoch: bigint): bigint {
+    return this._relativeEpochToPosixTimeStart(relativeEpoch) +
+      this.config.bond.epochConfig.epochLength;
+  }
+
+  _posixTimeToRelativeEpoch(posix_time: bigint): bigint {
+    return (posix_time - this.config.bond.epochConfig.epochBoundary) /
+        this.config.bond.epochConfig.epochLength +
+      this.config.bond.epochConfig.epochBoundaryAsEpoch;
+  }
+
+  _getCurrentEpoch(): bigint {
+    return this._posixTimeToRelativeEpoch(
+      BigInt((new Date()).getUTCMilliseconds()),
+    );
+  }
+
+  _getDayToMaturity(txTime: bigint, maturityTime: bigint): bigint {
+    return (maturityTime - txTime) / this._getMillisecondsOfDay();
+  }
+
+  _getPriceOfBond(
+    receivedAtMaturity: bigint,
+    dayToMaturity: bigint,
+    requestedYield: bigint,
+  ): bigint {
+    return receivedAtMaturity * this.config.bond.basisPointsRefUnit *
+      this.config.bond.basisPointsRefUnit / (
+        this.config.bond.basisPointsRefUnit *
+          this.config.bond.basisPointsRefUnit +
+        requestedYield * this.config.bond.basisPointsRefUnit * dayToMaturity /
+          365n
+      );
+  }
+
+  _getEscrowInfo(
+    escrowLovelace: bigint,
+    escrowDatum: D.POpenDatum,
+  ): { receivedAtMaturityOneBond: bigint; dayToMaturity: bigint } {
+    const txTime = BigInt((new Date()).getTime());
+    const currentEpoch = this._posixTimeToRelativeEpoch(txTime);
+    const epochStart = escrowDatum.start +
+      this.config.bond.epochConfig.epochBoundaryAsEpoch;
+    const epochMaturity = epochStart + escrowDatum.duration;
+    const epochRewardsLovelace = escrowDatum.epoRewards.get("")?.get("");
+    if (epochRewardsLovelace == undefined) {
+      throw new Error("Not found Epoch Rewards in Escrow Datum.");
+    }
+    const principalLovelace = escrowDatum.bondAmount *
+      this.config.bond.bondFaceValue;
+    const premiumPaidLovelace = escrowLovelace - principalLovelace;
+    const totalEpochDuePaid = currentEpoch - epochStart + 1n;
+    const totalInterestDuePaid = totalEpochDuePaid *
+      this.config.bond.bondFaceValue;
+    const interestLevelEpoch = (premiumPaidLovelace - totalInterestDuePaid) /
+      epochRewardsLovelace;
+    if (
+      interestLevelEpoch < escrowDatum.buffer && currentEpoch >= epochMaturity
+    ) throw new Error("This Bond is CLOSABLE");
+    const lendAfterFee = this.config.bond.basisPointsRefUnit -
+      escrowDatum.otmFee;
+    const lenderInterest = BigInt(epochRewardsLovelace) * escrowDatum.duration *
+      lendAfterFee;
+
+    return {
+      receivedAtMaturityOneBond:
+        (lenderInterest / this.config.bond.basisPointsRefUnit /
+          escrowDatum.bondAmount) + this.config.bond.bondFaceValue,
+      dayToMaturity: this._getDayToMaturity(
+        txTime,
+        this._relativeEpochToPosixTimeStart(epochMaturity),
+      ),
+    };
+  }
+
+  async _buy(listingUtxo: UTxO, quantity: bigint): Promise<Tx> {
+    const listingToken = Object.keys(listingUtxo.assets).find((unit) =>
+      unit.startsWith(this.config.bond.bondPolicyId)
+    );
+    if (!listingToken) throw new Error("No listing token found.");
+
+    const listingTokenQty = listingUtxo.assets[listingToken];
+    if (quantity <= 0 || quantity > listingTokenQty) {
+      throw new Error(
+        "Buy qty must be greater than zero and less than or equal to quantity of listing Utxo.",
+      );
+    }
+
+    const listingTokenUnit = fromUnit(listingToken);
+    const escrowUtxo: UTxO = await this.lucid.utxoByUnit(
+      toUnit(this.config.bond.escrowPolicyId, listingTokenUnit.assetName),
+    );
+    if (escrowUtxo == undefined) throw new Error("Not found Escrow Utxo.");
+
+    const escrowUtxoDatum = await this.lucid.datumOf<D.POpenDatum>(
+      escrowUtxo,
+      D.POpenDatum,
+    );
+    if (escrowUtxoDatum == undefined) {
+      throw new Error("Can't get Escrow Datum of listing UTxO");
+    }
+    const escrowInfo = this._getEscrowInfo(
+      escrowUtxo.assets["lovelace"],
+      escrowUtxoDatum,
+    );
+
     const listingDatum = await this.lucid.datumOf<D.CadogoBondListingDatum>(
       listingUtxo,
       D.CadogoBondListingDatum,
     );
-    if (!("ownerPaymentKey" in listingDatum && "requestedYield" in listingDatum)) {
+    if (
+      !("ownerPaymentKey" in listingDatum && "requestedYield" in listingDatum)
+    ) {
       throw new Error("Not a listing UTxO");
     }
+    const receivedAtMaturity = escrowInfo.receivedAtMaturityOneBond * quantity;
+    const priceOfOneBond = this._getPriceOfBond(
+      escrowInfo.receivedAtMaturityOneBond,
+      escrowInfo.dayToMaturity,
+      listingDatum.requestedYield,
+    );
+    const receivedWithYield = priceOfOneBond * quantity;
+    const receivedDiff = receivedAtMaturity - receivedWithYield;
+    const marketFeeSeller = receivedDiff * this.config.market.feeSeller /
+      this.config.bond.basisPointsRefUnit;
+    const marketFeeBuyer = receivedDiff * this.config.market.feeBuyer /
+      this.config.bond.basisPointsRefUnit;
 
-    const listingDatumOwner: D.Address = {
-      paymentCredential: {
-        PublicKeyCredential: [listingDatum.ownerPaymentKey],
-      },
-      stakeCredential: listingDatum.ownerStakeKey
-        ? {
-          Inline: [
-            {
-              PublicKeyCredential: [listingDatum.ownerStakeKey],
-            },
-          ],
-        }
-        : null,
-    };
-    const owner: Address = toAddress(listingDatumOwner, this.lucid);
-    const requestedLovelace: Lovelace = listingDatum.requestedYield;
+    const owner: Address = this.getOwnerAddressOfListingDatum(listingDatum);
 
-    const paymentDatum = Data.to<D.PaymentDatum>({
-      outRef: {
-        txHash: { hash: listingUtxo.txHash },
-        outputIndex: BigInt(listingUtxo.outputIndex),
-      },
-    }, D.PaymentDatum);
+    // const paymentDatum = Data.to<D.PaymentDatum>({
+    //   outRef: {
+    //     txHash: { hash: listingUtxo.txHash },
+    //     outputIndex: BigInt(listingUtxo.outputIndex),
+    //   },
+    // }, D.PaymentDatum);
+
+    const listingLovelace = listingUtxo.assets["lovelace"];
+    const marketAddressReceived = marketFeeSeller + marketFeeBuyer +
+      (quantity < listingTokenQty ? 0n : listingLovelace);
+    const ownerAddressReceived = receivedWithYield - marketFeeSeller;
 
     const refScripts = await this.getDeployedScripts();
 
@@ -1054,15 +1192,27 @@ export class ContractBond {
       [listingUtxo],
       Data.to<D.CadogoBondTradeAction>("Buy", D.CadogoBondTradeAction),
     )
+      .payToAddress(this.config.market.address, {
+        lovelace: marketAddressReceived,
+      })
+      .payToAddress(owner, { lovelace: ownerAddressReceived })
       .compose(
         (() => {
-          const { tx, remainingLovelace } = this._payFee(
-            requestedLovelace,
-            paymentDatum,
-          );
-          return tx.payToAddressWithData(owner, { inline: paymentDatum }, {
-            lovelace: remainingLovelace,
-          });
+          if (quantity < listingTokenQty) {
+            return this.lucid.newTx().payToContract(
+              listingUtxo.address,
+              {
+                inline: Data.to<D.CadogoBondListingDatum>(
+                  listingDatum,
+                  D.CadogoBondListingDatum,
+                ),
+              },
+              Object.fromEntries([["lovelace", listingLovelace], [
+                listingToken,
+                listingTokenQty - quantity,
+              ]]),
+            );
+          } else return this.lucid.newTx();
         })(),
       )
       .compose(
@@ -1071,7 +1221,7 @@ export class ContractBond {
           : this.lucid.newTx().attachSpendingValidator(
             this.config.tradeValidator,
           ),
-      );
+      ).readFrom([escrowUtxo]);
   }
 
   private _payFee(
@@ -1082,10 +1232,10 @@ export class ContractBond {
 
     let remainingLovelace = lovelace;
 
-    const address: Address = this.config.marketFee.address;
-    const fee = this.config.marketFee.feeBuyer;
-    const minFee = this.config.marketFee.minFee;
-    const maxFee = this.config.marketFee.maxFee;
+    const address: Address = this.config.market.address;
+    const fee = this.config.market.feeBuyer;
+    const minFee = this.config.market.minFee;
+    const maxFee = this.config.market.maxFee;
 
     const feeToPay = (lovelace * 10n) / fee;
     const adjustedFee = minFee && feeToPay < minFee
