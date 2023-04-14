@@ -1142,6 +1142,24 @@ export class ContractBond {
   }
 
   async _buy(listingUtxo: UTxO, quantity: bigint, txPosixTime: bigint): Promise<Tx> {
+    const buyerAddress = await this.lucid.wallet.address();
+    if (buyerAddress == this.config.market.address) throw new Error("Forbidden buy with fee address of market.");
+
+    const listingDatum = await this.lucid.datumOf<D.CadogoBondListingDatum>(
+      listingUtxo,
+      D.CadogoBondListingDatum,
+    );
+    if (
+      !("ownerPaymentKey" in listingDatum && "requestedYield" in listingDatum)
+    ) {
+      throw new Error("Not a listing UTxO");
+    }
+
+    const buyerAddressInfo = this.getOwnerAddressInfo(
+      fromAddress(buyerAddress),
+    );
+    if (buyerAddressInfo.paymentKey.hash == listingDatum.ownerPaymentKey) throw new Error("Forbidden buy with listing of yourself.");
+
     const listingToken = Object.keys(listingUtxo.assets).find((unit) =>
       unit.startsWith(this.config.bond.bondPolicyId)
     );
@@ -1175,15 +1193,6 @@ export class ContractBond {
     );
     // console.log(escrowInfo);
 
-    const listingDatum = await this.lucid.datumOf<D.CadogoBondListingDatum>(
-      listingUtxo,
-      D.CadogoBondListingDatum,
-    );
-    if (
-      !("ownerPaymentKey" in listingDatum && "requestedYield" in listingDatum)
-    ) {
-      throw new Error("Not a listing UTxO");
-    }
     const receivedAtMaturity = escrowInfo.receivedAtMaturityOneBond * quantity;
     const priceOfOneBond = this._getPriceOfBond(
       escrowInfo.receivedAtMaturityOneBond,

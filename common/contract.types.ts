@@ -297,7 +297,7 @@ export const ListingAction = Data.Enum([
   Data.Literal("Sell"),
   Data.Literal("Update"),
   Data.Literal("Buy"),
-  Data.Literal("WithdrawForTest"),
+  // Data.Literal("WithdrawForTest"),
 ]);
 export type ListingAction = Data.Static<typeof ListingAction>;
 
@@ -313,7 +313,7 @@ export const CadogoBondTradeAction = Data.Enum([
   Data.Literal("Update"),
   Data.Literal("Buy"),
   Data.Literal("Sell"),
-  Data.Literal("Withdraw"),
+  // Data.Literal("Withdraw"),
 ]);
 export type CadogoBondTradeAction = Data.Static<typeof CadogoBondTradeAction>;
 
