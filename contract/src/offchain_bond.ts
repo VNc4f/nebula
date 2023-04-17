@@ -2,9 +2,11 @@ import {
   Address,
   AddressDetails,
   Assets,
+  C,
   Credential,
   Data,
   Datum,
+  fromHex,
   fromText,
   fromUnit,
   Lovelace,
@@ -504,6 +506,37 @@ export class ContractBond {
         return Object.keys(utxo.assets).filter((unit) => unit !== "lovelace");
       })
       : utxos).sort(sortDesc);
+  }
+
+  async optimOpenDatumOf(utxo: UTxO): Promise<D.POpenDatum> {
+    return await this.lucid.datumOf<D.POpenDatum>(utxo, D.POpenDatum);
+  }
+
+  async optimOpenPoolDatumOf(utxo: UTxO): Promise<D.POpenPoolDatum> {
+    return await this.lucid.datumOf<D.POpenPoolDatum>(utxo, D.POpenPoolDatum);
+  }
+
+  async optimClosedPoolDatumOf(utxo: UTxO): Promise<D.PClosedPoolDatum> {
+    return await this.lucid.datumOf<D.PClosedPoolDatum>(
+      utxo,
+      D.PClosedPoolDatum,
+    );
+  }
+
+  async optimBondWriterDatumOf(utxo: UTxO): Promise<D.PBondWriterDatum> {
+    return await this.lucid.datumOf<D.PBondWriterDatum>(
+      utxo,
+      D.PBondWriterDatum,
+    );
+  }
+
+  balanceOf(raw: Datum): D.Balance {
+    const amount = Data.deserialize(C.PlutusData.from_bytes(fromHex(raw)));
+    if (typeof amount === "bigint") {
+      return { lovelace: amount } as D.Balance;
+    } else {
+      return Data.castFrom<D.Balance>(amount, D.Balance);
+    }
   }
 
   addressOf(cbor: string): AddressDetails {
@@ -1097,7 +1130,8 @@ export class ContractBond {
     escrowDatum: D.POpenDatum,
     txPosixTime: bigint,
   ): EscrowInfo {
-    const epochStart = escrowDatum.start + this.config.bond.epochConfig.epochBoundaryAsEpoch;
+    const epochStart = escrowDatum.start +
+      this.config.bond.epochConfig.epochBoundaryAsEpoch;
     const epochMaturity = epochStart + escrowDatum.duration;
     const epochRewardsLovelace = escrowDatum.epoRewards.get("")?.get("");
     if (epochRewardsLovelace == undefined) {
@@ -1135,15 +1169,26 @@ export class ContractBond {
       interestLevelEpoch: interestLevelEpoch,
       lendAfterFee: lendAfterFee,
       lenderInterest: lenderInterest,
-      receivedAtMaturityOneBond: (lenderInterest / this.config.bond.basisPointsRefUnit / escrowDatum.bondAmount) + this.config.bond.bondFaceValue,
-      dayToMaturity: this._getDayToMaturity(this._relativeEpochToPosixTimeStart(epochMaturity), txPosixTime),
+      receivedAtMaturityOneBond:
+        (lenderInterest / this.config.bond.basisPointsRefUnit /
+          escrowDatum.bondAmount) + this.config.bond.bondFaceValue,
+      dayToMaturity: this._getDayToMaturity(
+        this._relativeEpochToPosixTimeStart(epochMaturity),
+        txPosixTime,
+      ),
       txPosixTime: txPosixTime,
     };
   }
 
-  async _buy(listingUtxo: UTxO, quantity: bigint, txPosixTime: bigint): Promise<Tx> {
+  async _buy(
+    listingUtxo: UTxO,
+    quantity: bigint,
+    txPosixTime: bigint,
+  ): Promise<Tx> {
     const buyerAddress = await this.lucid.wallet.address();
-    if (buyerAddress == this.config.market.address) throw new Error("Forbidden buy with fee address of market.");
+    if (buyerAddress == this.config.market.address) {
+      throw new Error("Forbidden buy with fee address of market.");
+    }
 
     const listingDatum = await this.lucid.datumOf<D.CadogoBondListingDatum>(
       listingUtxo,
@@ -1158,7 +1203,9 @@ export class ContractBond {
     const buyerAddressInfo = this.getOwnerAddressInfo(
       fromAddress(buyerAddress),
     );
-    if (buyerAddressInfo.paymentKey.hash == listingDatum.ownerPaymentKey) throw new Error("Forbidden buy with listing of yourself.");
+    if (buyerAddressInfo.paymentKey.hash == listingDatum.ownerPaymentKey) {
+      throw new Error("Forbidden buy with listing of yourself.");
+    }
 
     const listingToken = Object.keys(listingUtxo.assets).find((unit) =>
       unit.startsWith(this.config.bond.bondPolicyId)
@@ -1216,7 +1263,8 @@ export class ContractBond {
     // }, D.PaymentDatum);
 
     const listingLovelace = listingUtxo.assets["lovelace"];
-    const marketAddressReceived = marketFeeSeller + marketFeeBuyer + (quantity < listingTokenQty ? 0n : listingLovelace);
+    const marketAddressReceived = marketFeeSeller + marketFeeBuyer +
+      (quantity < listingTokenQty ? 0n : listingLovelace);
     const ownerAddressReceived = receivedWithYield - marketFeeSeller;
     // console.log({
     //   requestedYield: listingDatum.requestedYield,
