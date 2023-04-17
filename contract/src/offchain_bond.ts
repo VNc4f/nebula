@@ -561,13 +561,18 @@ export class ContractBond {
     );
   }
 
-  async getDeployedScripts(): Promise<{ trade: UTxO | null }> {
-    if (!this.config.deployHash) return { trade: null };
+  async getDeployedScriptsOfHash(deployHash: string): Promise<{ trade: UTxO | null }> {
+    if (!deployHash) return { trade: null };
     const [trade] = await this.lucid.utxosByOutRef([{
-      txHash: this.config.deployHash,
+      txHash: deployHash,
       outputIndex: 0,
     }]);
     return { trade };
+  }
+
+  async getDeployedScripts(): Promise<{ trade: UTxO | null }> {
+    if (!this.config.deployHash) return { trade: null };
+    return await this.getDeployedScriptsOfHash(this.config.deployHash);
   }
 
   getContractHashes(): {
