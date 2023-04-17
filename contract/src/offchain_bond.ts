@@ -382,8 +382,12 @@ export class ContractBond {
 
   /** Return the current listings for a specific asset sorted in ascending order by price. */
   async getListings(assetName: string): Promise<UTxO[]> {
+    return await this.getListingsOfTradeAddress(assetName, this.config.tradeAddress);
+  }
+
+  async getListingsOfTradeAddress(assetName: string, tradeAddress: string): Promise<UTxO[]> {
     return (await this.lucid.utxosAtWithUnit(
-      paymentCredentialOf(this.config.tradeAddress),
+      paymentCredentialOf(tradeAddress),
       toUnit(
         this.config.bond.bondPolicyId,
         assetName,
@@ -543,10 +547,17 @@ export class ContractBond {
     return this.lucid.utils.getAddressDetails(cbor);
   }
 
-  async listingDatumOf(listingUtxo: UTxO): Promise<D.CadogoBondListingDatum> {
+  async listingDatumOfCadogo(listingUtxo: UTxO): Promise<D.CadogoBondListingDatum> {
     return await this.lucid.datumOf<D.CadogoBondListingDatum>(
       listingUtxo,
       D.CadogoBondListingDatum,
+    );
+  }
+
+  async listingDatumOf(listingUtxo: UTxO): Promise<D.ListingDatum> {
+    return await this.lucid.datumOf<D.ListingDatum>(
+      listingUtxo,
+      D.ListingDatum,
     );
   }
 
