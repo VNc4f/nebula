@@ -63,14 +63,14 @@ export class ContractBond {
         this.lucid.newTx(),
       )
       .validFrom(txUnixTime);
-    // console.log({
-    //   txUnixTime: txUnixTime,
-    //   txSlot: this.lucid.utils.unixTimeToSlot(txUnixTime),
-    // });
-    // const build_tx =
-    //   (await this.lucid.newTx().compose(buyOrders).txBuilderBalance())
-    //     .build_tx();
-    // console.log(build_tx.to_js_value());
+    console.log({
+      txUnixTime: txUnixTime,
+      txSlot: this.lucid.utils.unixTimeToSlot(txUnixTime),
+    });
+    const build_tx =
+      (await this.lucid.newTx().compose(buyOrders).txBuilderBalance())
+        .build_tx();
+    console.log(build_tx.to_js_value());
 
     const tx = await this.lucid.newTx()
       .compose(buyOrders)
@@ -1124,7 +1124,18 @@ export class ContractBond {
   }
 
   _getDayToMaturity(maturityTime: bigint, txPosixTime: bigint): bigint {
-    return (maturityTime - txPosixTime) / this._getMillisecondsOfDay();
+    if (txPosixTime > maturityTime) {
+      return 0n
+    } else {
+      const timeOfDay = this._getMillisecondsOfDay();
+      const diffTime = maturityTime - txPosixTime;
+      const maturityDay = diffTime / timeOfDay;
+      if (diffTime % timeOfDay == 0n) {
+        return maturityDay
+      } else {
+        return maturityDay + 1n
+      }
+    }
   }
 
   _getPriceOfBond(
@@ -1146,8 +1157,7 @@ export class ContractBond {
     escrowDatum: D.POpenDatum,
     txPosixTime: bigint,
   ): EscrowInfo {
-    const epochStart = escrowDatum.start +
-      this.config.bond.epochConfig.epochBoundaryAsEpoch;
+    const epochStart = escrowDatum.start + this.config.bond.epochConfig.epochBoundaryAsEpoch;
     const epochMaturity = epochStart + escrowDatum.duration;
     const epochRewardsLovelace = escrowDatum.epoRewards.get("")?.get("");
     if (epochRewardsLovelace == undefined) {
@@ -1189,7 +1199,7 @@ export class ContractBond {
         (lenderInterest / this.config.bond.basisPointsRefUnit /
           escrowDatum.bondAmount) + this.config.bond.bondFaceValue,
       dayToMaturity: this._getDayToMaturity(
-        this._relativeEpochToPosixTimeStart(epochMaturity),
+        this._relativeEpochToPosixTimeEnd(epochMaturity),
         txPosixTime,
       ),
       txPosixTime: txPosixTime,
@@ -1257,6 +1267,7 @@ export class ContractBond {
     // console.log(escrowInfo);
 
     const receivedAtMaturity = escrowInfo.receivedAtMaturityOneBond * quantity;
+    console.log("dayToMaturity: ", escrowInfo.dayToMaturity);
     const priceOfOneBond = this._getPriceOfBond(
       escrowInfo.receivedAtMaturityOneBond,
       escrowInfo.dayToMaturity,
@@ -1264,10 +1275,8 @@ export class ContractBond {
     );
     const receivedWithYield = priceOfOneBond * quantity;
     const receivedDiff = receivedAtMaturity - receivedWithYield;
-    const marketFeeSeller = receivedDiff * this.config.market.feeSeller /
-      this.config.bond.basisPointsRefUnit;
-    const marketFeeBuyer = receivedDiff * this.config.market.feeBuyer /
-      this.config.bond.basisPointsRefUnit;
+    const marketFeeSeller = receivedDiff * this.config.market.feeSeller / this.config.bond.basisPointsRefUnit;
+    const marketFeeBuyer = receivedDiff * this.config.market.feeBuyer / this.config.bond.basisPointsRefUnit;
 
     const owner: Address = this.getOwnerAddressOfListingDatum(listingDatum);
 
@@ -1279,8 +1288,7 @@ export class ContractBond {
     // }, D.PaymentDatum);
 
     const listingLovelace = listingUtxo.assets["lovelace"];
-    const marketAddressReceived = marketFeeSeller + marketFeeBuyer +
-      (quantity < listingTokenQty ? 0n : listingLovelace);
+    const marketAddressReceived = marketFeeSeller + marketFeeBuyer + (quantity < listingTokenQty ? 0n : listingLovelace);
     const ownerAddressReceived = receivedWithYield - marketFeeSeller;
     // console.log({
     //   requestedYield: listingDatum.requestedYield,
