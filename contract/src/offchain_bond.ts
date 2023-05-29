@@ -386,6 +386,21 @@ export class ContractBond {
   }
 
   async getListingsOfTradeAddress(assetName: string, tradeAddress: string): Promise<UTxO[]> {
+    // const tradePaymentCredential = paymentCredentialOf(tradeAddress);
+    // return (await this.lucid.utxosByUnit(
+    //   toUnit(
+    //     this.config.bond.bondPolicyId,
+    //     assetName,
+    //   ),
+    // )).filter((utxo: UTxO) => {
+    //   const units = Object.keys(utxo.assets).filter((unit) =>
+    //     unit !== "lovelace"
+    //   );
+    //   const paymentCredential = paymentCredentialOf(utxo.address);
+    //   return paymentCredential.type == tradePaymentCredential.type && paymentCredential.hash == tradePaymentCredential.hash && units.length >= 1 && units.every((unit) =>
+    //     unit.startsWith(this.config.bond.bondPolicyId)
+    //   )
+    // })
     return (await this.lucid.utxosAtWithUnit(
       paymentCredentialOf(tradeAddress),
       toUnit(
@@ -396,11 +411,11 @@ export class ContractBond {
       const units = Object.keys(utxo.assets).filter((unit) =>
         unit !== "lovelace"
       );
-      return units.every((unit) =>
+      return units.length >= 1 && units.every((unit) =>
         unit.startsWith(this.config.bond.bondPolicyId)
-      ) &&
-        units.length >= 1;
-    }).sort(sortAsc);
+      )
+    })
+    // .sort(sortDesc);
   }
 
   async getBondInfos(assetName: string): Promise<UTxO[]> {
