@@ -77,7 +77,10 @@ export class ContractBond {
       .complete();
 
     const txSigned = await tx.sign().complete();
-    // console.log(txSigned.toString());
+    console.log({
+      tx: tx.toString(),
+      txSigned: txSigned.toString()
+    });
     return txSigned.submit();
   }
 
@@ -104,6 +107,10 @@ export class ContractBond {
       .complete();
 
     const txSigned = await tx.sign().complete();
+    console.log({
+      tx: tx.toString(),
+      txSigned: txSigned.toString()
+    });
     return txSigned.submit();
   }
 
@@ -125,6 +132,10 @@ export class ContractBond {
       .complete();
 
     const txSigned = await tx.sign().complete();
+    console.log({
+      tx: tx.toString(),
+      txSigned: txSigned.toString()
+    });
     return txSigned.submit();
   }
 
@@ -213,6 +224,10 @@ export class ContractBond {
       .complete();
 
     const txSigned = await tx.sign().complete();
+    console.log({
+      tx: tx.toString(),
+      txSigned: txSigned.toString()
+    });
     return txSigned.submit();
   }
 
@@ -231,6 +246,10 @@ export class ContractBond {
       .complete();
 
     const txSigned = await tx.sign().complete();
+    console.log({
+      tx: tx.toString(),
+      txSigned: txSigned.toString()
+    });
     return txSigned.submit();
   }
 
@@ -247,6 +266,10 @@ export class ContractBond {
       .complete();
 
     const txSigned = await tx.sign().complete();
+    console.log({
+      tx: tx.toString(),
+      txSigned: txSigned.toString()
+    });
     return txSigned.submit();
   }
 
@@ -266,6 +289,10 @@ export class ContractBond {
       .complete();
 
     const txSigned = await tx.sign().complete();
+    console.log({
+      tx: tx.toString(),
+      txSigned: txSigned.toString()
+    });
     return txSigned.submit();
   }
 
@@ -310,6 +337,10 @@ export class ContractBond {
       .complete();
 
     const txSigned = await tx.sign().complete();
+    console.log({
+      tx: tx.toString(),
+      txSigned: txSigned.toString()
+    });
     return txSigned.submit();
   }
 
@@ -320,6 +351,10 @@ export class ContractBond {
       .complete();
 
     const txSigned = await tx.sign().complete();
+    console.log({
+      tx: tx.toString(),
+      txSigned: txSigned.toString()
+    });
     return txSigned.submit();
   }
 
@@ -328,6 +363,10 @@ export class ContractBond {
       .complete();
 
     const txSigned = await tx.sign().complete();
+    console.log({
+      tx: tx.toString(),
+      txSigned: txSigned.toString()
+    });
     return txSigned.submit();
   }
 
@@ -342,6 +381,10 @@ export class ContractBond {
       .complete();
 
     const txSigned = await tx.sign().complete();
+    console.log({
+      tx: tx.toString(),
+      txSigned: txSigned.toString()
+    });
     return txSigned.submit();
   }
 
@@ -355,6 +398,10 @@ export class ContractBond {
       .complete();
 
     const txSigned = await tx.sign().complete();
+    console.log({
+      tx: tx.toString(),
+      txSigned: txSigned.toString()
+    });
     return txSigned.submit();
   }
 
