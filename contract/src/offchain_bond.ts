@@ -70,7 +70,7 @@ export class ContractBond {
     const build_tx =
       (await this.lucid.newTx().compose(buyOrders).txBuilderBalance())
         .build_tx();
-    console.log(build_tx.to_js_value());
+    console.log({buyOrder: build_tx.to_js_value()});
 
     const tx = await this.lucid.newTx()
       .compose(buyOrders)
@@ -196,26 +196,33 @@ export class ContractBond {
       "Update",
       D.CadogoBondTradeAction,
     );
-    const tx = await this.lucid.newTx()
-      .collectFrom(
-        [listingUtxo],
-        redeemer,
-      )
-      .payToContract(listingUtxo.address, {
-        inline: Data.to<D.CadogoBondListingDatum>(
-          listingDatum,
-          D.CadogoBondListingDatum,
+
+    const changeOrder = this.lucid.newTx()
+    .collectFrom(
+      [listingUtxo],
+      redeemer,
+    )
+    .payToContract(listingUtxo.address, {
+      inline: Data.to<D.CadogoBondListingDatum>(
+        listingDatum,
+        D.CadogoBondListingDatum,
+      ),
+    }, Object.fromEntries([[listingToken, BigInt(quantity)]]))
+    .addSignerKey(ownerKey)
+    .compose(
+      refScripts.trade
+        ? this.lucid.newTx().readFrom([refScripts.trade])
+        : this.lucid.newTx().attachSpendingValidator(
+          this.config.tradeValidator,
         ),
-      }, Object.fromEntries([[listingToken, BigInt(quantity)]]))
-      .addSignerKey(ownerKey)
-      .compose(
-        refScripts.trade
-          ? this.lucid.newTx().readFrom([refScripts.trade])
-          : this.lucid.newTx().attachSpendingValidator(
-            this.config.tradeValidator,
-          ),
-      )
-      .complete();
+    );
+
+    const build_tx =
+      (await this.lucid.newTx().compose(changeOrder).txBuilderBalance())
+        .build_tx();
+    console.log({changeOrder: build_tx.to_js_value()});
+
+    const tx = await changeOrder.complete();
 
     console.log({tx: tx.toString()});
     const txSigned = await tx.sign().complete();
