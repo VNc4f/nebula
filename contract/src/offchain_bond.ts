@@ -76,11 +76,9 @@ export class ContractBond {
       .compose(buyOrders)
       .complete();
 
+    console.log({tx: tx.toString()});
     const txSigned = await tx.sign().complete();
-    console.log({
-      tx: tx.toString(),
-      txSigned: txSigned.toString()
-    });
+    console.log({txSigned: txSigned.toString()});
     return txSigned.submit();
   }
 
@@ -106,11 +104,9 @@ export class ContractBond {
       .compose(sellOrders)
       .complete();
 
+    console.log({tx: tx.toString()});
     const txSigned = await tx.sign().complete();
-    console.log({
-      tx: tx.toString(),
-      txSigned: txSigned.toString()
-    });
+    console.log({txSigned: txSigned.toString()});
     return txSigned.submit();
   }
 
@@ -131,11 +127,9 @@ export class ContractBond {
       )
       .complete();
 
+    console.log({tx: tx.toString()});
     const txSigned = await tx.sign().complete();
-    console.log({
-      tx: tx.toString(),
-      txSigned: txSigned.toString()
-    });
+    console.log({txSigned: txSigned.toString()});
     return txSigned.submit();
   }
 
@@ -223,11 +217,9 @@ export class ContractBond {
       )
       .complete();
 
+    console.log({tx: tx.toString()});
     const txSigned = await tx.sign().complete();
-    console.log({
-      tx: tx.toString(),
-      txSigned: txSigned.toString()
-    });
+    console.log({txSigned: txSigned.toString()});
     return txSigned.submit();
   }
 
@@ -245,11 +237,9 @@ export class ContractBond {
       .compose(await this._bid(assets, lovelace))
       .complete();
 
+    console.log({tx: tx.toString()});
     const txSigned = await tx.sign().complete();
-    console.log({
-      tx: tx.toString(),
-      txSigned: txSigned.toString()
-    });
+    console.log({txSigned: txSigned.toString()});
     return txSigned.submit();
   }
 
@@ -265,11 +255,9 @@ export class ContractBond {
       .compose(await this._bidOpen(lovelace, constraints))
       .complete();
 
+    console.log({tx: tx.toString()});
     const txSigned = await tx.sign().complete();
-    console.log({
-      tx: tx.toString(),
-      txSigned: txSigned.toString()
-    });
+    console.log({txSigned: txSigned.toString()});
     return txSigned.submit();
   }
 
@@ -288,11 +276,9 @@ export class ContractBond {
       .compose(await this._bidSwap(offering, requesting))
       .complete();
 
+    console.log({tx: tx.toString()});
     const txSigned = await tx.sign().complete();
-    console.log({
-      tx: tx.toString(),
-      txSigned: txSigned.toString()
-    });
+    console.log({txSigned: txSigned.toString()});
     return txSigned.submit();
   }
 
@@ -336,11 +322,9 @@ export class ContractBond {
       )
       .complete();
 
+    console.log({tx: tx.toString()});
     const txSigned = await tx.sign().complete();
-    console.log({
-      tx: tx.toString(),
-      txSigned: txSigned.toString()
-    });
+    console.log({txSigned: txSigned.toString()});
     return txSigned.submit();
   }
 
@@ -350,11 +334,9 @@ export class ContractBond {
     )
       .complete();
 
+    console.log({tx: tx.toString()});
     const txSigned = await tx.sign().complete();
-    console.log({
-      tx: tx.toString(),
-      txSigned: txSigned.toString()
-    });
+    console.log({txSigned: txSigned.toString()});
     return txSigned.submit();
   }
 
@@ -362,11 +344,9 @@ export class ContractBond {
     const tx = await this.lucid.newTx().compose(await this._cancelBid(bidUtxo))
       .complete();
 
+    console.log({tx: tx.toString()});
     const txSigned = await tx.sign().complete();
-    console.log({
-      tx: tx.toString(),
-      txSigned: txSigned.toString()
-    });
+    console.log({txSigned: txSigned.toString()});
     return txSigned.submit();
   }
 
@@ -380,11 +360,9 @@ export class ContractBond {
       .compose(await this._sell(bidUtxo, assetName))
       .complete();
 
+    console.log({tx: tx.toString()});
     const txSigned = await tx.sign().complete();
-    console.log({
-      tx: tx.toString(),
-      txSigned: txSigned.toString()
-    });
+    console.log({txSigned: txSigned.toString()});
     return txSigned.submit();
   }
 
@@ -397,11 +375,9 @@ export class ContractBond {
       .compose(await this._buy(listingUtxo, 1n, BigInt((new Date()).getTime())))
       .complete();
 
+    console.log({tx: tx.toString()});
     const txSigned = await tx.sign().complete();
-    console.log({
-      tx: tx.toString(),
-      txSigned: txSigned.toString()
-    });
+    console.log({txSigned: txSigned.toString()});
     return txSigned.submit();
   }
 
