@@ -32,7 +32,7 @@ import * as D from "../../common/contract.types.ts";
 import {
   AssetName,
   BondInfo,
-  CadogoConfig,
+  DanogoConfig,
   Constraints,
   EscrowInfo,
   NameAndQuantity,
@@ -40,11 +40,11 @@ import {
 
 export class ContractBond {
   lucid: Lucid;
-  config: CadogoConfig;
+  config: DanogoConfig;
 
   constructor(
     lucid: Lucid,
-    config: CadogoConfig,
+    config: DanogoConfig,
   ) {
     this.lucid = lucid;
     this.config = config;
@@ -142,9 +142,9 @@ export class ContractBond {
     // if (!(requestedYield > 1 && requestedYield < 9999)) {
     //   throw new Error("requested yield must be in range 1-9999");
     // }
-    const listingDatum = await this.lucid.datumOf<D.CadogoBondListingDatum>(
+    const listingDatum = await this.lucid.datumOf<D.DanogoBondListingDatum>(
       listingUtxo,
-      D.CadogoBondListingDatum,
+      D.DanogoBondListingDatum,
     );
     if (
       !("ownerPaymentKey" in listingDatum && "requestedYield" in listingDatum)
@@ -192,9 +192,9 @@ export class ContractBond {
     }
 
     const refScripts = await this.getDeployedScripts();
-    const redeemer = Data.to<D.CadogoBondTradeAction>(
+    const redeemer = Data.to<D.DanogoBondTradeAction>(
       "Update",
-      D.CadogoBondTradeAction,
+      D.DanogoBondTradeAction,
     );
 
     const changeOrder = this.lucid.newTx()
@@ -203,9 +203,9 @@ export class ContractBond {
       redeemer,
     )
     .payToContract(listingUtxo.address, {
-      inline: Data.to<D.CadogoBondListingDatum>(
+      inline: Data.to<D.DanogoBondListingDatum>(
         listingDatum,
-        D.CadogoBondListingDatum,
+        D.DanogoBondListingDatum,
       ),
     }, Object.fromEntries([[listingToken, BigInt(quantity)]]))
     .addSignerKey(ownerKey)
@@ -315,7 +315,7 @@ export class ContractBond {
 
     const tx = await this.lucid.newTx().collectFrom(
       [bidUtxo],
-      Data.to<D.CadogoBondTradeAction>("Update", D.CadogoBondTradeAction),
+      Data.to<D.DanogoBondTradeAction>("Update", D.DanogoBondTradeAction),
     ).payToContract(bidUtxo.address, {
       inline: bidUtxo.datum!,
     }, { ...bidUtxo.assets, lovelace })
@@ -592,10 +592,10 @@ export class ContractBond {
     return this.lucid.utils.getAddressDetails(cbor);
   }
 
-  async listingDatumOfCadogo(listingUtxo: UTxO): Promise<D.CadogoBondListingDatum> {
-    return await this.lucid.datumOf<D.CadogoBondListingDatum>(
+  async listingDatumOfDanogo(listingUtxo: UTxO): Promise<D.DanogoBondListingDatum> {
+    return await this.lucid.datumOf<D.DanogoBondListingDatum>(
       listingUtxo,
-      D.CadogoBondListingDatum,
+      D.DanogoBondListingDatum,
     );
   }
 
@@ -683,7 +683,7 @@ export class ContractBond {
         "Not support wallet address with payment key is script type",
       );
     }
-    const inlineListingDatum = Data.to<D.CadogoBondListingDatum>(
+    const inlineListingDatum = Data.to<D.DanogoBondListingDatum>(
       {
         ownerPaymentKey: ownerAddressInfo.paymentKey.hash,
         ownerStakeKey: ownerAddressInfo.stakeKey
@@ -691,7 +691,7 @@ export class ContractBond {
           : null,
         requestedYield: BigInt(requestedYield),
       },
-      D.CadogoBondListingDatum,
+      D.DanogoBondListingDatum,
     );
     return this.lucid.newTx().payToContract(adjustedTradeAddress, {
       inline: inlineListingDatum,
@@ -946,7 +946,7 @@ export class ContractBond {
   }
 
   getOwnerAddressOfListingDatum(
-    listingDatum: D.CadogoBondListingDatum,
+    listingDatum: D.DanogoBondListingDatum,
   ): Address {
     const listingDatumOwner: D.Address = {
       paymentCredential: {
@@ -966,9 +966,9 @@ export class ContractBond {
   }
 
   async _cancelListing(listingUtxo: UTxO): Promise<Tx> {
-    const listingDatum = await this.lucid.datumOf<D.CadogoBondListingDatum>(
+    const listingDatum = await this.lucid.datumOf<D.DanogoBondListingDatum>(
       listingUtxo,
-      D.CadogoBondListingDatum,
+      D.DanogoBondListingDatum,
     );
     if (
       !("ownerPaymentKey" in listingDatum && "requestedYield" in listingDatum)
@@ -987,7 +987,7 @@ export class ContractBond {
     const refScripts = await this.getDeployedScripts();
     return this.lucid.newTx().collectFrom(
       [listingUtxo],
-      Data.to<D.CadogoBondTradeAction>("Update", D.CadogoBondTradeAction),
+      Data.to<D.DanogoBondTradeAction>("Update", D.DanogoBondTradeAction),
     )
       .addSignerKey(ownerKey)
       .compose(
@@ -1067,7 +1067,7 @@ export class ContractBond {
     return this.lucid.newTx()
       .collectFrom(
         [bidUtxo],
-        Data.to<D.CadogoBondTradeAction>("Sell", D.CadogoBondTradeAction),
+        Data.to<D.DanogoBondTradeAction>("Sell", D.DanogoBondTradeAction),
       )
       .compose(
         refNFT
@@ -1125,7 +1125,7 @@ export class ContractBond {
     return this.lucid.newTx()
       .collectFrom(
         [bidUtxo],
-        Data.to<D.CadogoBondTradeAction>("Update", D.CadogoBondTradeAction),
+        Data.to<D.DanogoBondTradeAction>("Update", D.DanogoBondTradeAction),
       )
       .mintAssets({ [bidToken]: -1n })
       .validFrom(this.lucid.utils.slotToUnixTime(1000))
@@ -1261,9 +1261,9 @@ export class ContractBond {
       throw new Error("Forbidden buy with fee address of market.");
     }
 
-    const listingDatum = await this.lucid.datumOf<D.CadogoBondListingDatum>(
+    const listingDatum = await this.lucid.datumOf<D.DanogoBondListingDatum>(
       listingUtxo,
-      D.CadogoBondListingDatum,
+      D.DanogoBondListingDatum,
     );
     if (
       !("ownerPaymentKey" in listingDatum && "requestedYield" in listingDatum)
@@ -1350,7 +1350,7 @@ export class ContractBond {
 
     return this.lucid.newTx().collectFrom(
       [listingUtxo],
-      Data.to<D.CadogoBondTradeAction>("Buy", D.CadogoBondTradeAction),
+      Data.to<D.DanogoBondTradeAction>("Buy", D.DanogoBondTradeAction),
     )
       .payToAddress(this.config.market.address, {
         lovelace: marketAddressReceived,
@@ -1362,9 +1362,9 @@ export class ContractBond {
             return this.lucid.newTx().payToContract(
               listingUtxo.address,
               {
-                inline: Data.to<D.CadogoBondListingDatum>(
+                inline: Data.to<D.DanogoBondListingDatum>(
                   listingDatum,
-                  D.CadogoBondListingDatum,
+                  D.DanogoBondListingDatum,
                 ),
               },
               Object.fromEntries([["lovelace", listingLovelace], [

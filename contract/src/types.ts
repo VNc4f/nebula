@@ -56,6 +56,7 @@ export type MarketFee = {
   /** Variable fee. e.g.: 0.04 (4%) */
   feeBuyer: bigint;
   feeSeller: bigint;
+  sellValidSlot: bigint;
   /** Optionally set a minimum absolute fee. */
   minFee?: Lovelace | null;
   /** Optionally set a maximum absolute fee. */
@@ -98,7 +99,7 @@ export type SlotConfigNetwork = {
   slot_length: bigint;
 };
 
-export type CadogoConfig = {
+export type DanogoConfig = {
   bond: BondConfig;
   market: MarketFee;
   slotConfigNetwork: SlotConfigNetwork;

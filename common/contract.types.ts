@@ -309,22 +309,22 @@ export type ListingDatum = Data.Static<typeof ListingDatum>;
 
 
 
-export const CadogoBondTradeAction = Data.Enum([
+export const DanogoBondTradeAction = Data.Enum([
   Data.Literal("Update"),
   Data.Literal("Buy"),
   Data.Literal("Sell"),
   // Data.Literal("Withdraw"),
 ]);
-export type CadogoBondTradeAction = Data.Static<typeof CadogoBondTradeAction>;
+export type DanogoBondTradeAction = Data.Static<typeof DanogoBondTradeAction>;
 
-export const CadogoBondListingDatum = Data.Object({
+export const DanogoBondListingDatum = Data.Object({
   ownerPaymentKey: Data.String,
   ownerStakeKey: Data.Nullable(Data.String),
   requestedYield: Data.BigInt,
 });
-export type CadogoBondListingDatum = Data.Static<typeof CadogoBondListingDatum>;
+export type DanogoBondListingDatum = Data.Static<typeof DanogoBondListingDatum>;
 
-export const CadogoEpochConfig = Data.Object({
+export const DanogoEpochConfig = Data.Object({
   // 1 year = 365 days / 5 days per epoch = 73 epoch. default: 73
   yearToEpoch: Data.BigInt,
   // default: 1_647_899_091_000
@@ -339,9 +339,9 @@ export const CadogoEpochConfig = Data.Object({
   // base is 5 days = 432_000_000
   epochLengthBase: Data.BigInt,
 });
-export type CadogoEpochConfig = Data.Static<typeof CadogoEpochConfig>;
+export type DanogoEpochConfig = Data.Static<typeof DanogoEpochConfig>;
 
-export const CadogoBondConfig = Data.Object({
+export const DanogoBondConfig = Data.Object({
   bondPolicyId: Data.String,
   escrowPolicyId: Data.String,
   // basis_points reference value, default: 10_000
@@ -353,30 +353,32 @@ export const CadogoBondConfig = Data.Object({
   oneAda2Lovelace: Data.BigInt,
   // 1 bond = 100 ADA = 100_000_000 lovelace. default: 100 ADA = 100_000_000 lovelace
   bondFaceValue: Data.BigInt,
-  epochConfig: CadogoEpochConfig,
+  epochConfig: DanogoEpochConfig,
 });
-export type CadogoBondConfig = Data.Static<typeof CadogoBondConfig>;
+export type DanogoBondConfig = Data.Static<typeof DanogoBondConfig>;
 
-export const CadogoBondMarketConfig = Data.Object({
+export const DanogoBondMarketConfig = Data.Object({
   address: Address,
   // value in range 0001 -> 9999 default: 1% per yield == 100
   buyerFee: Data.BigInt,
   // value in range 0001 -> 9999 default: 1% per yield == 100
   sellerFee: Data.BigInt,
+  // Khoảng thời gian giao dịch sell hợp lệ, giá trị tính theo slot
+  sellValidSlot: Data.Nullable(Data.BigInt),
 });
-export type CadogoBondMarketConfig = Data.Static<typeof CadogoBondMarketConfig>;
+export type DanogoBondMarketConfig = Data.Static<typeof DanogoBondMarketConfig>;
 
-export const CadogoConfig = Data.Object({
-  bond: CadogoBondConfig,
-  market: CadogoBondMarketConfig,
+export const DanogoConfig = Data.Object({
+  bond: DanogoBondConfig,
+  market: DanogoBondMarketConfig,
   slotConfigNetwork: SlotConfigNetwork,
 });
-export type CadogoConfig = Data.Static<typeof CadogoConfig>;
+export type DanogoConfig = Data.Static<typeof DanogoConfig>;
 
-export const CadogoMarketParams = Data.Tuple([
-  CadogoConfig,
+export const DanogoMarketParams = Data.Tuple([
+  DanogoConfig,
 ]);
-export type CadogoMarketParams = Data.Static<typeof CadogoMarketParams>;
+export type DanogoMarketParams = Data.Static<typeof DanogoMarketParams>;
 
 
 
