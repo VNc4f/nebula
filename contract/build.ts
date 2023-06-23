@@ -68,10 +68,10 @@ await Deno.writeTextFile(
     .replaceAll('from "lucid-cardano";', 'from "./lucid-cardano/mod.js";')
 );
 
-Deno.removeSync("../../dapp/mod.js");
+Deno.removeSync("../../dapp/src/mod.js");
 Deno.copyFileSync(
   "./dist/web/mod.js",
-  "../../dapp/mod.js",
+  "../../dapp/src/mod.js",
 );
 
 // await esbuild.build({

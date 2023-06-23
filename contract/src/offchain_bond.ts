@@ -52,20 +52,25 @@ export class ContractBond {
 
   async buy(listingUtxos: { utxo: UTxO; qty: number }[]): Promise<TxHash> {
     // const txUnixTime = this.lucid.utils.slotToUnixTime(0);
-    const txUnixTime = (new Date()).getTime();
+    const txValidFrom = (new Date()).getTime();
+    const txValidTo = txValidFrom + Number(this.config.market.sellValidSlot * this.config.slotConfigNetwork.slot_length)
     const buyOrders = (await Promise.all(
       listingUtxos.map((listingUtxo) =>
-        this._buy(listingUtxo.utxo, BigInt(listingUtxo.qty), BigInt(txUnixTime))
+        this._buy(listingUtxo.utxo, BigInt(listingUtxo.qty), BigInt(txValidFrom))
       ),
     ))
       .reduce(
         (prevTx, tx) => prevTx.compose(tx),
         this.lucid.newTx(),
       )
-      .validFrom(txUnixTime);
+      .validFrom(txValidFrom)
+      .validTo(txValidTo);
+
     console.log({
-      txUnixTime: txUnixTime,
-      txSlot: this.lucid.utils.unixTimeToSlot(txUnixTime),
+      txValidFromUnixTime: txValidFrom,
+      txValidToUnixTime: txValidTo,
+      txValidFromSlot: this.lucid.utils.unixTimeToSlot(txValidFrom),
+      txValidToSlot: this.lucid.utils.unixTimeToSlot(txValidTo),
     });
     const build_tx =
       (await this.lucid.newTx().compose(buyOrders).txBuilderBalance())
